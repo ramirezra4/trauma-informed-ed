@@ -11,10 +11,12 @@ interface GrowthStats {
 
 interface GrowthVisualProps {
   stats?: GrowthStats
+  loading?: boolean
 }
 
 export default function GrowthVisual({ 
-  stats = { checkins: 12, completed: 8, wins: 15, streak: 5 } 
+  stats = { checkins: 0, completed: 0, wins: 0, streak: 0 },
+  loading = false
 }: GrowthVisualProps) {
   const [activeMetric, setActiveMetric] = useState<keyof GrowthStats>('checkins')
 
@@ -74,6 +76,23 @@ export default function GrowthVisual({
       }
     }
     return colors[colorName as keyof typeof colors] || colors.primary
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
+        <div className="p-4 pb-2">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-display text-neutral-800">Your Growth</h2>
+            <span className="text-xs text-neutral-500">This month</span>
+          </div>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-2"></div>
+            <p className="text-sm text-neutral-600">Loading your progress...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
+import { saveCheckin, saveLittleWin } from '@/lib/supabase'
 import CheckInForm from '@/components/CheckInForm'
 import SuggestionsDisplay from '@/components/SuggestionsDisplay'
 import FocusTimer from '@/components/FocusTimer'
@@ -32,11 +34,19 @@ type FlowStep = 'checkin' | 'suggestions' | 'timer' | 'wins' | 'complete'
 
 export default function CheckInFlow() {
   const router = useRouter()
+  const { user, loading } = useAuth()
   const [currentStep, setCurrentStep] = useState<FlowStep>('checkin')
   const [checkinData, setCheckinData] = useState<CheckInData | null>(null)
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null)
   const [suggestions, setSuggestions] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth')
+    }
+  }, [user, loading, router])
 
   // Mock progress stats (would come from Supabase in real app)
   const mockStats = {
@@ -46,10 +56,20 @@ export default function CheckInFlow() {
   }
 
   const handleCheckinSubmit = async (data: CheckInData) => {
+    if (!user) return
+    
     setIsLoading(true)
     setCheckinData(data)
 
     try {
+      // Save check-in to Supabase first
+      await saveCheckin(user.id, {
+        mood: data.mood,
+        energy: data.energy,
+        focus: data.focus,
+        notes: data.notes || ''
+      })
+
       // Call AI suggestions API
       const response = await fetch('/api/suggestions', {
         method: 'POST',
@@ -64,8 +84,8 @@ export default function CheckInFlow() {
       setCurrentStep('suggestions')
     } catch (error) {
       console.error('Error:', error)
-      // Fallback to direct completion if API fails
-      setCurrentStep('complete')
+      alert('There was an error saving your check-in. Please try again.')
+      setCurrentStep('checkin')
     } finally {
       setIsLoading(false)
     }
@@ -95,8 +115,18 @@ export default function CheckInFlow() {
   }
 
   const handleWinSave = async (win: LittleWin) => {
-    // In real app, save to Supabase
-    console.log('Saving win:', win)
+    if (!user) return
+    
+    try {
+      await saveLittleWin(user.id, {
+        category: win.category,
+        description: win.description
+      })
+      console.log('Little win saved:', win)
+    } catch (error) {
+      console.error('Error saving little win:', error)
+      alert('There was an error saving your little win.')
+    }
   }
 
   const handleFlowComplete = () => {
@@ -112,6 +142,23 @@ export default function CheckInFlow() {
     if (hour < 12) return 'Good morning'
     if (hour < 17) return 'Good afternoon'
     return 'Good evening'
+  }
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-2"></div>
+          <p className="text-neutral-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render if no user (will redirect)
+  if (!user) {
+    return null
   }
 
   return (

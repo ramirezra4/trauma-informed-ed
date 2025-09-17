@@ -4,7 +4,13 @@ import { Database } from '@/types/database'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
 
 // Trauma-informed helper functions
 
@@ -61,20 +67,72 @@ export async function saveCheckin(userId: string, checkin: {
   focus: number
   notes?: string
 }) {
-  const { data, error } = await supabase
-    .from('checkins')
-    .insert({
-      user_id: userId,
-      mood: checkin.mood,
-      energy: checkin.energy,
-      focus: checkin.focus,
-      notes: checkin.notes || null
-    })
-    .select()
+  console.log('Saving check-in for user:', userId, checkin)
+  
+  try {
+    // First ensure user exists in users table
+    await ensureUserExists(userId)
+    console.log('User ensured, now inserting check-in')
+    
+    const { data, error } = await supabase
+      .from('checkins')
+      .insert({
+        user_id: userId,
+        mood: checkin.mood,
+        energy: checkin.energy,
+        focus: checkin.focus,
+        notes: checkin.notes || null
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Supabase check-in error:', error)
+      throw error
+    }
+    
+    console.log('Check-in saved successfully:', data)
+    return data
+  } catch (err) {
+    console.error('saveCheckin error:', err)
+    throw err
+  }
+}
+
+// Ensure user exists in users table (create if not exists)
+async function ensureUserExists(userId: string) {
+  console.log('Checking if user exists:', userId)
+  
+  const { data: existingUser, error: selectError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('id', userId)
     .single()
 
-  if (error) throw error
-  return data
+  console.log('Existing user check result:', existingUser, selectError)
+
+  if (!existingUser) {
+    console.log('User does not exist, creating...')
+    const { data: authUser } = await supabase.auth.getUser()
+    console.log('Auth user:', authUser.user?.email)
+    
+    if (authUser.user) {
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          email: authUser.user.email!,
+          consent_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      console.log('User creation result:', newUser, insertError)
+      if (insertError) throw insertError
+    }
+  } else {
+    console.log('User already exists')
+  }
 }
 
 // Save a little win (trauma-informed positive reinforcement)
@@ -82,6 +140,9 @@ export async function saveLittleWin(userId: string, win: {
   category: 'academic' | 'self_care' | 'social' | 'personal' | 'other'
   description: string
 }) {
+  // First ensure user exists in users table
+  await ensureUserExists(userId)
+  
   const { data, error } = await supabase
     .from('little_wins')
     .insert({

@@ -11,7 +11,8 @@
     "test:watch": "echo 'Tests will be added later'"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.57.4",
     "autoprefixer": "^10.4.21",
     "cssesc": "^3.0.0",
     "loose-envify": "^1.4.0",
