@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { getLastCheckinTime } from '@/lib/supabase'
 
 interface CheckInCardProps {
   onStartFullFlow: () => void
@@ -16,9 +18,22 @@ const quickScaleEmojis = {
 }
 
 export default function CheckInCard({ onStartFullFlow, onQuickCheckin }: CheckInCardProps) {
+  const { user } = useAuth()
   const [showQuickCheckin, setShowQuickCheckin] = useState(false)
   const [quickData, setQuickData] = useState({ mood: 3, energy: 3, focus: 3 })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [lastCheckinTime, setLastCheckinTime] = useState<string | null>(null)
+
+  // Load last check-in time
+  useEffect(() => {
+    const loadLastCheckin = async () => {
+      if (user) {
+        const lastTime = await getLastCheckinTime(user.id)
+        setLastCheckinTime(lastTime)
+      }
+    }
+    loadLastCheckin()
+  }, [user])
 
   const handleQuickSubmit = async () => {
     setIsSubmitting(true)
@@ -27,21 +42,36 @@ export default function CheckInCard({ onStartFullFlow, onQuickCheckin }: CheckIn
     setShowQuickCheckin(false)
     setIsSubmitting(false)
     setQuickData({ mood: 3, energy: 3, focus: 3 }) // Reset
+    
+    // Refresh last check-in time after submission
+    if (user) {
+      const lastTime = await getLastCheckinTime(user.id)
+      setLastCheckinTime(lastTime)
+    }
   }
 
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 17) return 'Good afternoon' 
-    return 'Good evening'
-  }
 
   const getLastCheckinMessage = () => {
-    // Mock last checkin data - in real app would come from Supabase
-    const hours = 18
-    if (hours < 1) return "You checked in recently"
-    if (hours < 24) return `Last check-in: ${hours}h ago`
-    return "It's been a while since your last check-in"
+    if (!lastCheckinTime) return "Welcome! Ready for your first check-in?"
+    
+    const now = new Date()
+    const checkinTime = new Date(lastCheckinTime)
+    const diffMs = now.getTime() - checkinTime.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
+    
+    if (diffMinutes < 60) {
+      if (diffMinutes < 1) return "You just checked in"
+      return `Last check-in: ${diffMinutes}m ago`
+    }
+    
+    if (diffHours < 24) {
+      return `Last check-in: ${diffHours}h ago`
+    }
+    
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffDays === 1) return "Last check-in: yesterday"
+    return `Last check-in: ${diffDays} days ago`
   }
 
   if (showQuickCheckin) {
@@ -118,7 +148,7 @@ export default function CheckInCard({ onStartFullFlow, onQuickCheckin }: CheckIn
       {/* Header */}
       <div className="p-4 pb-3 bg-gradient-to-r from-primary-50 to-secondary-50">
         <h2 className="text-lg font-display text-primary-600 mb-1">
-          {getGreeting()}
+          Check-in
         </h2>
         <p className="text-sm text-neutral-600">
           Ready for a gentle check-in?

@@ -2,21 +2,34 @@
 
 This document provides context, learning resources, and development practices for the Gentle Path trauma-informed student support platform.
 
-## 🎉 Current Status: MVP Milestone 1 Complete
+## 🎉 Current Status: MVP Milestone 1+ Complete
 
 **What's Working:**
 - Full user authentication system with Supabase
+- Enhanced user profiles with name, school, academic year
+- Profile completion flow for new/incomplete users
 - Protected routes with session management
 - Real-time dashboard with user's actual progress data
 - Quick check-in functionality (saves to database)
 - Complete check-in flow with AI suggestions, timer, and little wins
+- Navigation menu with slide-over interface
+- Comprehensive settings page (profile, account, security)
 - All data persistence working with proper user isolation via RLS
 
+**Recent Additions:**
+- User profile enhancement with additional fields
+- Profile completion enforcement and setup flow
+- Settings page with tabbed interface for profile/account/security management
+- Email and password change functionality
+- Navigation menu accessible from hamburger button
+- Performance optimizations with useCallback hooks
+
 **Current Database Schema:**
-- `users` - User profiles with consent tracking
+- `users` - Enhanced user profiles with full_name, school, academic_year, consent tracking
 - `checkins` - Daily mood/energy/focus check-ins
 - `little_wins` - Achievement tracking
 - `assignments`, `plans`, `plan_steps` - Ready for future features
+- All tables have proper RLS policies and foreign key relationships
 
 ## Technology Stack Overview
 
@@ -195,6 +208,53 @@ CREATE TABLE checkins (
 );
 ```
 
+### 4. User Experience Patterns
+
+```typescript
+// Navigation Menu Pattern - Slide-over with backdrop
+const NavigationMenu = ({ isOpen, onClose }: NavigationMenuProps) => {
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      {/* Panel */}
+      <div className="fixed inset-y-0 left-0 z-50 w-80 bg-white">
+        {/* Content */}
+      </div>
+    </>
+  )
+}
+
+// Settings Page Pattern - Tabbed interface
+const SettingsPage = () => {
+  const [activeTab, setActiveTab] = useState<'profile' | 'account' | 'password'>('profile')
+  // Tab content switching logic
+}
+
+// Profile Completion Flow Pattern
+const AuthContext = () => {
+  const [needsProfileSetup, setNeedsProfileSetup] = useState(false)
+  // Automatic redirect logic for incomplete profiles
+}
+```
+
+### 5. Performance Optimization Patterns
+
+```typescript
+// Always use useCallback for async functions in useEffect
+const loadUserData = useCallback(async () => {
+  if (!user) return
+  // Async operations
+}, [user]) // Include dependencies
+
+// Avoid infinite re-renders in useEffect
+useEffect(() => {
+  if (user) {
+    loadUserData()
+  }
+}, [user, loadUserData]) // Include the memoized function
+```
+
 ## Trauma-Informed Development Principles
 
 ### 1. Language and Tone
@@ -225,16 +285,34 @@ CREATE TABLE checkins (
 ### File Organization
 ```
 app/
-├── (auth)/          # Route groups for organization
-├── checkin/         # Feature-based routing
+├── auth/            # Authentication pages  
+├── checkin/         # Full check-in flow
+├── profile-setup/   # Profile completion flow
+├── settings/        # User settings page
 └── api/
-    ├── checkins/    # REST endpoints
-    └── ai/          # AI-related endpoints
+    ├── suggestions/ # AI suggestions endpoint
+    └── future/      # Additional API routes
 
 components/
-├── ui/              # Reusable UI primitives
-├── forms/           # Form components
-└── layout/          # Layout components
+├── AuthForm.tsx         # Sign in/up form
+├── CheckInCard.tsx      # Home page check-in widget
+├── CheckInForm.tsx      # Full check-in form  
+├── GrowthVisual.tsx     # Progress visualization
+├── NavigationMenu.tsx   # Slide-over navigation
+├── SmartSuggestionBox.tsx # Daily quotes
+└── [other components]   # Flow-specific components
+
+contexts/
+└── AuthContext.tsx      # User authentication & profile state
+
+lib/
+└── supabase.ts         # Database client & helper functions
+
+supabase/migrations/
+├── 001_initial_schema.sql     # Full schema (reference)
+├── 002_safe_schema.sql        # Production deployment version
+├── 003_fix_users_policy.sql   # User INSERT policy fix
+└── 004_add_user_profile_fields.sql # Profile enhancement
 ```
 
 ### Naming Conventions
@@ -276,10 +354,27 @@ components/
 ## Debugging & Troubleshooting
 
 ### Common Issues
+
+**Performance Issues:**
+- **Infinite re-renders**: Always wrap async functions in `useCallback` when used in `useEffect`
+- **Loading screens stuck**: Check for circular dependencies in AuthContext profile checking
+- **Memory leaks**: Ensure all event listeners and subscriptions are cleaned up
+
+**Authentication Issues:**
+- **Profile completion loops**: Temporarily disable profile checking if experiencing infinite redirects
+- **RLS policy errors**: Check that users table has INSERT policy for `auth.uid() = id`
+- **Session not persisting**: Verify Supabase client configuration in `lib/supabase.ts`
+
+**Database Issues:**
+- **Migration errors**: Use safe migrations with `IF NOT EXISTS` and `DO $$ BEGIN...EXCEPTION` blocks
+- **Type mismatches**: Ensure enum types are created before tables that reference them
+- **Foreign key errors**: Check that referenced tables exist before creating relationships
+
+**UI/UX Issues:**
 - **Hydration errors**: Check server/client component usage
 - **Tailwind not applying**: Verify `content` paths in config
-- **Supabase connection**: Check environment variables
-- **Type errors**: Ensure database types are updated
+- **Navigation menu not showing**: Check z-index values and backdrop click handlers
+- **Form submissions failing**: Validate required fields and error handling
 
 ### Useful Commands
 ```bash

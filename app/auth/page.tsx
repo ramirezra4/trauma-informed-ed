@@ -7,14 +7,18 @@ import AuthForm from '@/components/AuthForm'
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
-  const { user, loading } = useAuth()
+  const { user, loading, needsProfileSetup } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (user && !loading) {
-      router.push('/')
+      if (needsProfileSetup) {
+        router.push('/profile-setup')
+      } else {
+        router.push('/')
+      }
     }
-  }, [user, loading, router])
+  }, [user, loading, needsProfileSetup, router])
 
   if (loading) {
     return (

@@ -11,6 +11,9 @@ interface AuthFormProps {
 export default function AuthForm({ mode, onToggleMode }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [school, setSchool] = useState('')
+  const [academicYear, setAcademicYear] = useState<'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate' | 'other'>('freshman')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,14 +27,18 @@ export default function AuthForm({ mode, onToggleMode }: AuthFormProps) {
     try {
       const { error } = mode === 'signin' 
         ? await signIn(email, password)
-        : await signUp(email, password)
+        : await signUp(email, password, {
+            fullName,
+            school,
+            academicYear
+          })
 
       if (error) {
         setError(error.message)
       } else if (mode === 'signup') {
         setError(null)
         // Show success message for signup
-        alert('Check your email to confirm your account!')
+        alert('Welcome! Check your email to confirm your account.')
       }
     } catch (err) {
       setError('An unexpected error occurred')
@@ -85,6 +92,60 @@ export default function AuthForm({ mode, onToggleMode }: AuthFormProps) {
             placeholder="••••••••"
           />
         </div>
+
+        {mode === 'signup' && (
+          <>
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-neutral-700 mb-1">
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder="Your full name"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="school" className="block text-sm font-medium text-neutral-700 mb-1">
+                School/University
+              </label>
+              <input
+                id="school"
+                type="text"
+                value={school}
+                onChange={(e) => setSchool(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder="Name of your institution"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="academicYear" className="block text-sm font-medium text-neutral-700 mb-1">
+                Academic Year
+              </label>
+              <select
+                id="academicYear"
+                value={academicYear}
+                onChange={(e) => setAcademicYear(e.target.value as typeof academicYear)}
+                required
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="freshman">Freshman</option>
+                <option value="sophomore">Sophomore</option>
+                <option value="junior">Junior</option>
+                <option value="senior">Senior</option>
+                <option value="graduate">Graduate Student</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-md p-3">

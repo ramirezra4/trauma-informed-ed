@@ -117,11 +117,17 @@ async function ensureUserExists(userId: string) {
     console.log('Auth user:', authUser.user?.email)
     
     if (authUser.user) {
+      // Extract profile data from user metadata if available
+      const metadata = authUser.user.user_metadata || {}
+      
       const { data: newUser, error: insertError } = await supabase
         .from('users')
         .insert({
           id: userId,
           email: authUser.user.email!,
+          full_name: metadata.full_name || null,
+          school: metadata.school || null,
+          academic_year: metadata.academic_year || null,
           consent_at: new Date().toISOString()
         })
         .select()
@@ -150,6 +156,40 @@ export async function saveLittleWin(userId: string, win: {
       category: win.category,
       description: win.description
     })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// Get user profile information
+export async function getUserProfile(userId: string) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('full_name, display_name, school, academic_year')
+    .eq('id', userId)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// Update user profile information
+export async function updateUserProfile(userId: string, profile: {
+  fullName: string
+  school: string
+  academicYear: 'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate' | 'other'
+}) {
+  const { data, error } = await supabase
+    .from('users')
+    .update({
+      full_name: profile.fullName,
+      school: profile.school,
+      academic_year: profile.academicYear,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', userId)
     .select()
     .single()
 
@@ -189,4 +229,18 @@ export async function getProgressStats(userId: string) {
     completed: completedCount || 0,
     wins: winsCount || 0
   }
+}
+
+// Get the most recent check-in time for display
+export async function getLastCheckinTime(userId: string) {
+  const { data, error } = await supabase
+    .from('checkins')
+    .select('created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error) return null
+  return data.created_at
 }

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getProgressStats, saveCheckin } from '@/lib/supabase'
+import { getProgressStats, saveCheckin, getUserProfile } from '@/lib/supabase'
 import SmartSuggestionBox from '@/components/SmartSuggestionBox'
 import GrowthVisual from '@/components/GrowthVisual'
 import CheckInCard from '@/components/CheckInCard'
+import NavigationMenu from '@/components/NavigationMenu'
 
 interface LittleWin {
   category: 'academic' | 'self_care' | 'social' | 'personal' | 'other'
@@ -15,7 +16,7 @@ interface LittleWin {
 
 export default function Home() {
   const router = useRouter()
-  const { user, loading, signOut } = useAuth()
+  const { user, loading, signOut, needsProfileSetup } = useAuth()
   const [stats, setStats] = useState({
     checkins: 0,
     completed: 0,
@@ -23,39 +24,55 @@ export default function Home() {
     streak: 0
   })
   const [statsLoading, setStatsLoading] = useState(true)
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
-  // Redirect to auth if not logged in
+  // Redirect to auth if not logged in, or profile setup if needed
   useEffect(() => {
     if (!loading && !user) {
       router.push('/auth')
+    } else if (!loading && user && needsProfileSetup) {
+      router.push('/profile-setup')
     }
-  }, [user, loading, router])
+  }, [user, loading, needsProfileSetup, router])
 
-  // Load user's real stats
-  useEffect(() => {
-    if (user) {
-      loadUserStats()
-    }
-  }, [user])
-
-  const loadUserStats = async () => {
+  const loadUserData = useCallback(async () => {
     if (!user) return
     
     try {
       setStatsLoading(true)
-      const userStats = await getProgressStats(user.id)
+      
+      // Load both stats and profile in parallel
+      const [userStats, profile] = await Promise.all([
+        getProgressStats(user.id),
+        getUserProfile(user.id).catch(() => null) // Don't fail if profile doesn't exist yet
+      ])
+      
       setStats({
         checkins: userStats.checkins,
         completed: userStats.completed,
         wins: userStats.wins,
         streak: 0 // We'll implement streak calculation later
       })
+      
+      setUserProfile(profile)
     } catch (error) {
-      console.error('Error loading stats:', error)
+      console.error('Error loading user data:', error)
       // Keep default zeros on error
     } finally {
       setStatsLoading(false)
     }
+  }, [user])
+
+  // Load user's real stats and profile
+  useEffect(() => {
+    if (user) {
+      loadUserData()
+    }
+  }, [user, loadUserData])
+
+  const loadUserStats = async () => {
+    await loadUserData()
   }
 
   const handleStartFullFlow = () => {
@@ -93,6 +110,13 @@ export default function Home() {
   }
 
   const getUserName = () => {
+    // Try to get name from profile first, then fall back to email
+    if (userProfile?.display_name) {
+      return userProfile.display_name
+    }
+    if (userProfile?.full_name) {
+      return userProfile.full_name.split(' ')[0] // First name
+    }
     return user?.email?.split('@')[0] || null
   }
 
@@ -123,6 +147,17 @@ export default function Home() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6 relative">
+          {/* Menu Button */}
+          <button 
+            onClick={() => setMenuOpen(true)}
+            className="absolute top-0 left-0 text-neutral-500 hover:text-neutral-700 focus:outline-none"
+            aria-label="Open menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
           <h1 className="text-2xl font-display text-primary-600 mb-1">
             {getGreeting()}{getUserName() ? `, ${getUserName()}` : ''}
           </h1>
@@ -170,6 +205,12 @@ export default function Home() {
           </p>
         </div>
       </div>
+
+      {/* Navigation Menu */}
+      <NavigationMenu 
+        isOpen={menuOpen} 
+        onClose={() => setMenuOpen(false)} 
+      />
     </main>
   )
 }
