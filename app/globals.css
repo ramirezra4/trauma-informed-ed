@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Young+Serif:wght@400&family=Inter:wght@300;400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-neutral-200;
+  }
+  
+  body {
+    @apply font-sans;
+    background-color: #fefcfa; /* warm white background */
+    color: #4a423a; /* warm dark foreground */
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
