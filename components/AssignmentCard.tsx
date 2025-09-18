@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getRecentAssignments, saveAssignment } from '@/lib/supabase'
 
@@ -8,6 +9,7 @@ interface Assignment {
   id: string
   course: string
   title: string
+  description: string | null
   due_at: string
   impact: number
   est_minutes: number
@@ -16,7 +18,7 @@ interface Assignment {
 
 interface AssignmentCardProps {
   onViewAll: () => void
-  onQuickAdd?: (data: { course: string; title: string; due_at: string; impact: number; est_minutes: number }) => void
+  onQuickAdd?: (data: { course: string; title: string; description?: string; due_at: string; impact: number; est_minutes: number }) => void
 }
 
 const impactEmojis = {
@@ -36,11 +38,13 @@ const statusColors = {
 
 export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCardProps) {
   const { user } = useAuth()
+  const router = useRouter()
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [quickData, setQuickData] = useState({
     course: '',
     title: '',
+    description: '',
     due_date: '',
     due_time: '23:59',
     impact: 3,
@@ -78,6 +82,7 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
       await saveAssignment(user.id, {
         course: quickData.course,
         title: quickData.title,
+        description: quickData.description || null,
         due_at: dueDateTime.toISOString(),
         impact: quickData.impact,
         est_minutes: quickData.est_minutes
@@ -92,7 +97,7 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
 
       // Reset form
       setShowQuickAdd(false)
-      setQuickData({ course: '', title: '', due_date: '', due_time: '23:59', impact: 3, est_minutes: 60 })
+      setQuickData({ course: '', title: '', description: '', due_date: '', due_time: '23:59', impact: 3, est_minutes: 60 })
 
       // Show success feedback
       alert('Assignment added! 📚')
@@ -200,6 +205,22 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
               placeholder="e.g., Final Research Paper"
               className="
                 w-full px-3 py-2 border border-neutral-300 rounded-md text-sm
+                focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+              "
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Description <span className="text-neutral-500">(optional)</span>
+            </label>
+            <textarea
+              value={quickData.description}
+              onChange={(e) => setQuickData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Add any details or notes..."
+              rows={2}
+              className="
+                w-full px-3 py-2 border border-neutral-300 rounded-md text-sm resize-none
                 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
               "
             />
@@ -313,7 +334,11 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
               {assignments.length > 0 ? (
                 <div className="space-y-2 mb-4">
                   {assignments.slice(0, 3).map((assignment) => (
-                    <div key={assignment.id} className="flex items-center justify-between p-2 bg-neutral-50 rounded-md">
+                    <div
+                      key={assignment.id}
+                      onClick={() => router.push(`/assignments/${assignment.id}`)}
+                      className="flex items-center justify-between p-2 bg-neutral-50 rounded-md hover:bg-neutral-100 cursor-pointer transition-colors"
+                    >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium text-neutral-500 uppercase">
@@ -324,6 +349,9 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
                           </span>
                         </div>
                         <p className="text-sm text-neutral-800 truncate">{assignment.title}</p>
+                        {assignment.description && (
+                          <p className="text-xs text-neutral-500 truncate mt-1">{assignment.description}</p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-neutral-600">{formatDueDate(assignment.due_at)}</p>

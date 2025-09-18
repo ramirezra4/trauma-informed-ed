@@ -71,6 +71,7 @@ export interface Database {
           user_id: string
           course: string
           title: string
+          description: string | null
           due_at: string
           impact: number // 1-5 scale (how important)
           est_minutes: number
@@ -83,6 +84,7 @@ export interface Database {
           user_id: string
           course: string
           title: string
+          description?: string | null
           due_at: string
           impact: number
           est_minutes: number
@@ -95,6 +97,7 @@ export interface Database {
           user_id?: string
           course?: string
           title?: string
+          description?: string | null
           due_at?: string
           impact?: number
           est_minutes?: number

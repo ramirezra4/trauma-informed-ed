@@ -9,6 +9,7 @@ interface Assignment {
   id: string
   course: string
   title: string
+  description: string | null
   due_at: string
   impact: number
   est_minutes: number
@@ -45,6 +46,7 @@ export default function AssignmentsPage() {
   const [formData, setFormData] = useState({
     course: '',
     title: '',
+    description: '',
     due_date: '',
     due_time: '23:59',
     impact: 3,
@@ -117,6 +119,7 @@ export default function AssignmentsPage() {
         const updated = await updateAssignment(editingAssignment.id, {
           course: formData.course,
           title: formData.title,
+          description: formData.description || null,
           due_at: dueDateTime.toISOString(),
           impact: formData.impact,
           est_minutes: formData.est_minutes
@@ -128,6 +131,7 @@ export default function AssignmentsPage() {
         const newAssignment = await saveAssignment(user.id, {
           course: formData.course,
           title: formData.title,
+          description: formData.description || null,
           due_at: dueDateTime.toISOString(),
           impact: formData.impact,
           est_minutes: formData.est_minutes
@@ -137,7 +141,7 @@ export default function AssignmentsPage() {
       }
 
       // Reset form
-      setFormData({ course: '', title: '', due_date: '', due_time: '23:59', impact: 3, est_minutes: 60 })
+      setFormData({ course: '', title: '', description: '', due_date: '', due_time: '23:59', impact: 3, est_minutes: 60 })
       setShowAddForm(false)
       setEditingAssignment(null)
     } catch (error) {
@@ -176,12 +180,18 @@ export default function AssignmentsPage() {
     setFormData({
       course: assignment.course,
       title: assignment.title,
+      description: assignment.description || '',
       due_date: dueDate.toISOString().split('T')[0], // Format for date input
       due_time: dueDate.toTimeString().slice(0, 5), // Format for time input (HH:MM)
       impact: assignment.impact,
       est_minutes: assignment.est_minutes
     })
-    setShowAddForm(true)
+    // Don't show the top form - we'll show inline editing instead
+  }
+
+  const cancelEdit = () => {
+    setEditingAssignment(null)
+    setFormData({ course: '', title: '', description: '', due_date: '', due_time: '23:59', impact: 3, est_minutes: 60 })
   }
 
   const formatDueDate = (due_at: string) => {
@@ -248,7 +258,7 @@ export default function AssignmentsPage() {
           </div>
           <button
             onClick={() => {
-              setFormData({ course: '', title: '', due_date: '', due_time: '23:59', impact: 3, est_minutes: 60 })
+              setFormData({ course: '', title: '', description: '', due_date: '', due_time: '23:59', impact: 3, est_minutes: 60 })
               setEditingAssignment(null)
               setShowAddForm(true)
             }}
@@ -336,19 +346,35 @@ export default function AssignmentsPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Description <span className="text-neutral-500">(optional)</span>
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Add any additional details, requirements, or notes..."
+                  rows={3}
+                  className="
+                    w-full px-3 py-2 border border-neutral-300 rounded-md resize-none
+                    focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+                  "
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Priority Level
                   </label>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-1">
                     {[1, 2, 3, 4, 5].map((value) => (
                       <button
                         key={value}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, impact: value }))}
                         className={`
-                          w-12 h-12 rounded-full border-2 transition-all
+                          min-w-12 h-12 px-2 rounded-full border-2 transition-all flex items-center justify-center
                           focus:outline-none focus:ring-2 focus:ring-orange-500
                           ${formData.impact === value
                             ? 'border-orange-500 bg-orange-50'
@@ -491,70 +517,245 @@ export default function AssignmentsPage() {
           ) : (
             filteredAssignments.map((assignment) => (
               <div key={assignment.id} className="bg-white rounded-lg border border-neutral-200 p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
-                        {assignment.course}
-                      </span>
-                      <span className="text-lg">
-                        {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
-                      </span>
-                      <span className={`inline-block text-xs px-2 py-1 rounded-full border ${statusColors[assignment.status]}`}>
-                        {assignment.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-neutral-800 mb-2">
-                      {assignment.title}
+                {editingAssignment?.id === assignment.id ? (
+                  // Inline Edit Form
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <h3 className="text-lg font-semibold text-neutral-800 mb-4">
+                      Edit Assignment
                     </h3>
-                    <div className="flex items-center gap-4 text-sm text-neutral-600">
-                      <span>{formatDueDate(assignment.due_at)}</span>
-                      <span>Est. {formatEstTime(assignment.est_minutes)}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => startEdit(assignment)}
-                      className="
-                        px-3 py-1 text-sm text-neutral-600 hover:text-neutral-800
-                        border border-neutral-300 rounded-md hover:bg-neutral-50
-                        transition-colors
-                      "
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(assignment.id)}
-                      className="
-                        px-3 py-1 text-sm text-red-600 hover:text-red-800
-                        border border-red-300 rounded-md hover:bg-red-50
-                        transition-colors
-                      "
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
 
-                {/* Status Update Buttons */}
-                <div className="flex gap-2 flex-wrap">
-                  {['not_started', 'in_progress', 'completed', 'dropped'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => handleStatusUpdate(assignment.id, status as Assignment['status'])}
-                      disabled={assignment.status === status}
-                      className={`
-                        px-3 py-1 text-xs rounded-md border transition-colors
-                        ${assignment.status === status
-                          ? `${statusColors[status as keyof typeof statusColors]} opacity-75 cursor-not-allowed`
-                          : 'border-neutral-300 text-neutral-600 hover:bg-neutral-50'
-                        }
-                      `}
-                    >
-                      Mark as {status.replace('_', ' ')}
-                    </button>
-                  ))}
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">
+                          Course
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.course}
+                          onChange={(e) => setFormData(prev => ({ ...prev, course: e.target.value }))}
+                          placeholder="e.g., PSYC 101"
+                          required
+                          className="
+                            w-full px-3 py-2 border border-neutral-300 rounded-md
+                            focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+                          "
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">
+                          Due Date
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.due_date}
+                          onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
+                          required
+                          className="
+                            w-full px-3 py-2 border border-neutral-300 rounded-md
+                            focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+                          "
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Due Time
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.due_time}
+                        onChange={(e) => setFormData(prev => ({ ...prev, due_time: e.target.value }))}
+                        required
+                        className="
+                          w-full px-3 py-2 border border-neutral-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+                        "
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.title}
+                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="e.g., Final Research Paper"
+                        required
+                        className="
+                          w-full px-3 py-2 border border-neutral-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+                        "
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Description <span className="text-neutral-500">(optional)</span>
+                      </label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Add any additional details, requirements, or notes..."
+                        rows={3}
+                        className="
+                          w-full px-3 py-2 border border-neutral-300 rounded-md resize-none
+                          focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+                        "
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
+                          Priority Level
+                        </label>
+                        <div className="flex justify-between items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, impact: value }))}
+                              className={`
+                                min-w-12 h-12 px-2 rounded-full border-2 transition-all flex items-center justify-center
+                                focus:outline-none focus:ring-2 focus:ring-orange-500
+                                ${formData.impact === value
+                                  ? 'border-orange-500 bg-orange-50'
+                                  : 'border-neutral-200 hover:border-orange-300'
+                                }
+                              `}
+                            >
+                              {impactEmojis[value as keyof typeof impactEmojis]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">
+                          Estimated Time
+                        </label>
+                        <select
+                          value={formData.est_minutes}
+                          onChange={(e) => setFormData(prev => ({ ...prev, est_minutes: parseInt(e.target.value) }))}
+                          className="
+                            w-full px-3 py-2 border border-neutral-300 rounded-md
+                            focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+                          "
+                        >
+                          <option value={30}>30 minutes</option>
+                          <option value={60}>1 hour</option>
+                          <option value={120}>2 hours</option>
+                          <option value={180}>3 hours</option>
+                          <option value={240}>4+ hours</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="
+                          flex-1 py-2 px-4 border border-neutral-300 text-neutral-700 rounded-lg
+                          hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-500
+                          transition-colors
+                        "
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="
+                          flex-1 py-2 px-4 bg-orange-500 text-white rounded-lg font-medium
+                          hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500
+                          disabled:opacity-50 disabled:cursor-not-allowed
+                          transition-colors
+                        "
+                      >
+                        {isSubmitting ? 'Saving...' : 'Update Assignment'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  // Normal Assignment Card View
+                  <>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
+                            {assignment.course}
+                          </span>
+                          <span className="text-lg">
+                            {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
+                          </span>
+                          <span className={`inline-block text-xs px-2 py-1 rounded-full border ${statusColors[assignment.status]}`}>
+                            {assignment.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <h3
+                          onClick={() => router.push(`/assignments/${assignment.id}`)}
+                          className="text-lg font-semibold text-neutral-800 mb-2 cursor-pointer hover:text-orange-600 transition-colors"
+                        >
+                          {assignment.title}
+                        </h3>
+                        {assignment.description && (
+                          <p className="text-sm text-neutral-600 mb-3 leading-relaxed">
+                            {assignment.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 text-sm text-neutral-600">
+                          <span>{formatDueDate(assignment.due_at)}</span>
+                          <span>Est. {formatEstTime(assignment.est_minutes)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => startEdit(assignment)}
+                          className="
+                            px-3 py-1 text-sm text-neutral-600 hover:text-neutral-800
+                            border border-neutral-300 rounded-md hover:bg-neutral-50
+                            transition-colors
+                          "
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(assignment.id)}
+                          className="
+                            px-3 py-1 text-sm text-red-600 hover:text-red-800
+                            border border-red-300 rounded-md hover:bg-red-50
+                            transition-colors
+                          "
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Status Update Buttons */}
+                    <div className="flex gap-2 flex-wrap">
+                      {['not_started', 'in_progress', 'completed', 'dropped'].map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => handleStatusUpdate(assignment.id, status as Assignment['status'])}
+                          disabled={assignment.status === status}
+                          className={`
+                            px-3 py-1 text-xs rounded-md border transition-colors
+                            ${assignment.status === status
+                              ? `${statusColors[status as keyof typeof statusColors]} opacity-75 cursor-not-allowed`
+                              : 'border-neutral-300 text-neutral-600 hover:bg-neutral-50'
+                            }
+                          `}
+                        >
+                          Mark as {status.replace('_', ' ')}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             ))
           )}

@@ -119,9 +119,6 @@ export default function GrowthVisual({
           <div className="text-sm text-neutral-600">
             {metrics[activeMetric].label}
           </div>
-          <div className="text-xs text-neutral-500 mt-1">
-            {metrics[activeMetric].description}
-          </div>
         </div>
       </div>
 

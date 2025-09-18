@@ -277,10 +277,23 @@ export async function getRecentAssignments(userId: string, limit = 5) {
   return data
 }
 
+// Get a single assignment by ID
+export async function getAssignment(assignmentId: string) {
+  const { data, error } = await supabase
+    .from('assignments')
+    .select('*')
+    .eq('id', assignmentId)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 // Create a new assignment
 export async function saveAssignment(userId: string, assignment: {
   course: string
   title: string
+  description?: string | null
   due_at: string
   impact: number
   est_minutes: number
@@ -293,6 +306,7 @@ export async function saveAssignment(userId: string, assignment: {
       user_id: userId,
       course: assignment.course,
       title: assignment.title,
+      description: assignment.description || null,
       due_at: assignment.due_at,
       impact: assignment.impact,
       est_minutes: assignment.est_minutes,
@@ -309,6 +323,7 @@ export async function saveAssignment(userId: string, assignment: {
 export async function updateAssignment(assignmentId: string, updates: {
   course?: string
   title?: string
+  description?: string | null
   due_at?: string
   impact?: number
   est_minutes?: number

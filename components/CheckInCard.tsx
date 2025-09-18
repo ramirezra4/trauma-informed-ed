@@ -147,15 +147,19 @@ export default function CheckInCard({ onStartFullFlow, onQuickCheckin }: CheckIn
     <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
       {/* Header */}
       <div className="p-4 pb-3 bg-gradient-to-r from-primary-50 to-secondary-50">
-        <h2 className="text-lg font-display text-primary-600 mb-1">
-          Check-in
-        </h2>
-        <p className="text-sm text-neutral-600">
-          Ready for a gentle check-in?
-        </p>
-        <p className="text-xs text-neutral-500 mt-2">
-          {getLastCheckinMessage()}
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-display text-primary-600 mb-1">
+              Check-in
+            </h2>
+            <p className="text-sm text-neutral-600">
+              Ready for a gentle check-in?
+            </p>
+          </div>
+          <p className="text-xs text-neutral-500 text-right">
+            {getLastCheckinMessage()}
+          </p>
+        </div>
       </div>
 
       {/* Content */}
