@@ -8,7 +8,7 @@ import SmartSuggestionBox from '@/components/SmartSuggestionBox'
 import GrowthVisual from '@/components/GrowthVisual'
 import CheckInCard from '@/components/CheckInCard'
 import AssignmentCard from '@/components/AssignmentCard'
-import PageHeader from '@/components/PageHeader'
+import NavigationMenu from '@/components/NavigationMenu'
 
 interface LittleWin {
   category: 'academic' | 'self_care' | 'social' | 'personal' | 'other'
@@ -18,6 +18,7 @@ interface LittleWin {
 export default function Home() {
   const router = useRouter()
   const { user, loading, signOut, needsProfileSetup } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
   const [stats, setStats] = useState({
     checkins: 0,
     completed: 0,
@@ -149,25 +150,38 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-background to-neutral-50 px-4 py-6">
       <div className="max-w-6xl mx-auto">
-        {/* Navigation Header */}
-        <PageHeader showBack={false} />
+        {/* Header with hamburger, greeting, and sign out all aligned */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            {/* Hamburger menu button */}
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+              aria-label="Open navigation menu"
+            >
+              <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
-        {/* Page Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-display text-primary-600 mb-1">
-            {getGreeting()}{getUserName() ? `, ${getUserName()}` : ''}
-          </h1>
-          <p className="text-sm text-neutral-600">
+            {/* Centered greeting */}
+            <h1 className="text-2xl font-display text-primary-600 text-center flex-1">
+              {getGreeting()}{getUserName() ? `, ${getUserName()}` : ''}
+            </h1>
+
+            {/* Sign Out Button */}
+            <button
+              onClick={handleSignOut}
+              className="text-sm text-neutral-500 hover:text-neutral-700 underline focus:outline-none"
+            >
+              Sign Out
+            </button>
+          </div>
+
+          {/* Subtitle */}
+          <p className="text-sm text-neutral-600 text-center">
             Welcome to your support space
           </p>
-          
-          {/* Sign Out Button */}
-          <button 
-            onClick={handleSignOut}
-            className="absolute top-0 right-0 text-sm text-neutral-500 hover:text-neutral-700 underline focus:outline-none"
-          >
-            Sign Out
-          </button>
         </div>
 
         {/* Main Dashboard Grid */}
@@ -203,6 +217,8 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Navigation menu */}
+      <NavigationMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
     </main>
   )
 }

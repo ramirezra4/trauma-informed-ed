@@ -30,7 +30,7 @@ export default function PageHeader({
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-6">
+      <div className={`flex items-center gap-2 ${!title ? 'mb-6' : ''}`}>
         {/* Hamburger menu button */}
         <button
           onClick={() => setMenuOpen(true)}
@@ -57,7 +57,7 @@ export default function PageHeader({
 
         {/* Page title */}
         {title && (
-          <h1 className="ml-4 text-xl font-semibold text-neutral-800">
+          <h1 className="flex-1 text-2xl font-display text-primary-600">
             {title}
           </h1>
         )}
