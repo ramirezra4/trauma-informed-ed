@@ -437,8 +437,11 @@ npx supabase logs
 # Test accessibility
 npm run test -- --coverage
 
-# Check for unused dependencies  
+# Check for unused dependencies
 npx depcheck
+
+# Fix corrupted node_modules (if dev server won't start)
+rm -rf node_modules package-lock.json && npm install
 ```
 
 ## Resources for Trauma-Informed Design

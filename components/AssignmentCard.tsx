@@ -93,7 +93,14 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
       setAssignments(data)
 
       // Call optional callback
-      onQuickAdd?.(quickData)
+      onQuickAdd?.({
+        course: quickData.course,
+        title: quickData.title,
+        description: quickData.description || undefined,
+        due_at: new Date(`${quickData.due_date}T${quickData.due_time}`).toISOString(),
+        impact: quickData.impact,
+        est_minutes: quickData.est_minutes
+      })
 
       // Reset form
       setShowQuickAdd(false)

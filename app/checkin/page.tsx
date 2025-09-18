@@ -9,6 +9,7 @@ import SuggestionsDisplay from '@/components/SuggestionsDisplay'
 import FocusTimer from '@/components/FocusTimer'
 import LittleWins from '@/components/LittleWins'
 import ProgressCard from '@/components/ProgressCard'
+import PageHeader from '@/components/PageHeader'
 
 interface CheckInData {
   mood: number
@@ -164,18 +165,15 @@ export default function CheckInFlow() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-background to-neutral-50 px-4 py-8">
       <div className="max-w-md mx-auto">
-        {/* Header */}
+        {/* Navigation Header */}
+        <PageHeader
+          showBack={true}
+          backPath="/"
+          backLabel="Home"
+        />
+
+        {/* Page Header */}
         <div className="text-center mb-8">
-          <button
-            onClick={handleBackToHome}
-            className="
-              mb-4 text-sm text-neutral-500 hover:text-neutral-700
-              focus:outline-none focus:underline transition-colors
-            "
-          >
-            ← Back to home
-          </button>
-          
           <h1 className="text-3xl font-display text-primary-600 mb-2">
             {getGreeting()}
           </h1>

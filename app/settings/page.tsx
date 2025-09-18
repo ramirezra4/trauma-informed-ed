@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserProfile, updateUserProfile } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
+import PageHeader from '@/components/PageHeader'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -167,15 +168,15 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-neutral-50">
       <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Navigation Header */}
+        <PageHeader
+          showBack={true}
+          backPath="/"
+          backLabel="Home"
+        />
+
+        {/* Page Header */}
         <div className="mb-8">
-          <button
-            onClick={() => router.push('/')}
-            className="mb-4 text-sm text-neutral-500 hover:text-neutral-700 focus:outline-none focus:underline transition-colors"
-          >
-            ← Back to home
-          </button>
-          
           <h1 className="text-3xl font-display text-primary-600 mb-2">Settings</h1>
           <p className="text-neutral-600">
             Manage your profile, account, and security preferences

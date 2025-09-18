@@ -8,7 +8,7 @@ import SmartSuggestionBox from '@/components/SmartSuggestionBox'
 import GrowthVisual from '@/components/GrowthVisual'
 import CheckInCard from '@/components/CheckInCard'
 import AssignmentCard from '@/components/AssignmentCard'
-import NavigationMenu from '@/components/NavigationMenu'
+import PageHeader from '@/components/PageHeader'
 
 interface LittleWin {
   category: 'academic' | 'self_care' | 'social' | 'personal' | 'other'
@@ -26,7 +26,6 @@ export default function Home() {
   })
   const [statsLoading, setStatsLoading] = useState(true)
   const [userProfile, setUserProfile] = useState<any>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
 
   // Redirect to auth if not logged in, or profile setup if needed
   useEffect(() => {
@@ -150,19 +149,11 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-background to-neutral-50 px-4 py-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-6 relative">
-          {/* Menu Button */}
-          <button 
-            onClick={() => setMenuOpen(true)}
-            className="absolute top-0 left-0 text-neutral-500 hover:text-neutral-700 focus:outline-none"
-            aria-label="Open menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+        {/* Navigation Header */}
+        <PageHeader showBack={false} />
 
+        {/* Page Header */}
+        <div className="text-center mb-6">
           <h1 className="text-2xl font-display text-primary-600 mb-1">
             {getGreeting()}{getUserName() ? `, ${getUserName()}` : ''}
           </h1>
@@ -212,11 +203,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Navigation Menu */}
-      <NavigationMenu 
-        isOpen={menuOpen} 
-        onClose={() => setMenuOpen(false)} 
-      />
     </main>
   )
 }

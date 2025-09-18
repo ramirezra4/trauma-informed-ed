@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserAssignments, saveAssignment, updateAssignment, deleteAssignment } from '@/lib/supabase'
+import PageHeader from '@/components/PageHeader'
 
 interface Assignment {
   id: string
@@ -240,15 +241,16 @@ export default function AssignmentsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-background to-neutral-50 px-4 py-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
+        {/* Navigation Header */}
+        <PageHeader
+          showBack={true}
+          backPath="/"
+          backLabel="Home"
+        />
+
+        {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <button
-              onClick={() => router.back()}
-              className="mb-2 text-sm text-neutral-600 hover:text-neutral-800 flex items-center gap-1"
-            >
-              ← Back
-            </button>
             <h1 className="text-2xl font-display text-orange-600 mb-1">
               Assignments
             </h1>
