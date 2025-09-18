@@ -5,19 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getAssignment, updateAssignment, deleteAssignment } from '@/lib/supabase'
 import PageHeader from '@/components/PageHeader'
-
-interface Assignment {
-  id: string
-  course: string
-  title: string
-  description: string | null
-  due_at: string
-  impact: number
-  est_minutes: number
-  status: 'not_started' | 'in_progress' | 'completed' | 'dropped'
-  created_at: string
-  updated_at: string
-}
+import { Assignment } from '@/types/supabase'
 
 const impactEmojis = {
   1: '⭐',

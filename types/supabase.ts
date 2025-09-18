@@ -1,3 +1,6 @@
+// Complete Supabase Database Types
+// This file provides proper typing for all database operations
+
 export type Json =
   | string
   | number
@@ -6,9 +9,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-// Trauma-informed database schema
 export interface Database {
-  PostgrestVersion: '12'
   public: {
     Tables: {
       users: {
@@ -30,7 +31,7 @@ export interface Database {
           display_name?: string | null
           school?: string | null
           academic_year?: 'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate' | 'other' | null
-          consent_at: string
+          consent_at?: string
           created_at?: string
           updated_at?: string
         }
@@ -50,9 +51,9 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          mood: number // 1-5 scale
-          energy: number // 1-5 scale
-          focus: number // 1-5 scale
+          mood: number
+          energy: number
+          focus: number
           notes: string | null
           created_at: string
         }
@@ -83,7 +84,7 @@ export interface Database {
           title: string
           description: string | null
           due_at: string
-          impact: number // 1-5 scale (how important)
+          impact: number
           est_minutes: number
           status: 'not_started' | 'in_progress' | 'completed' | 'dropped'
           created_at: string
@@ -114,61 +115,6 @@ export interface Database {
           status?: 'not_started' | 'in_progress' | 'completed' | 'dropped'
           created_at?: string
           updated_at?: string
-        }
-      }
-      plans: {
-        Row: {
-          id: string
-          user_id: string
-          trigger: 'morning' | 'falling_behind'
-          summary: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          trigger: 'morning' | 'falling_behind'
-          summary: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          trigger?: 'morning' | 'falling_behind'
-          summary?: string
-          created_at?: string
-        }
-      }
-      plan_steps: {
-        Row: {
-          id: string
-          plan_id: string
-          assignment_id: string | null
-          label: string
-          est_min: number
-          status: 'pending' | 'completed' | 'skipped'
-          created_at: string
-          completed_at: string | null
-        }
-        Insert: {
-          id?: string
-          plan_id: string
-          assignment_id?: string | null
-          label: string
-          est_min: number
-          status?: 'pending' | 'completed' | 'skipped'
-          created_at?: string
-          completed_at?: string | null
-        }
-        Update: {
-          id?: string
-          plan_id?: string
-          assignment_id?: string | null
-          label?: string
-          est_min?: number
-          status?: 'pending' | 'completed' | 'skipped'
-          created_at?: string
-          completed_at?: string | null
         }
       }
       little_wins: {
@@ -202,10 +148,27 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
-      assignment_status: 'not_started' | 'in_progress' | 'completed' | 'dropped'
-      plan_trigger: 'morning' | 'falling_behind'
-      plan_step_status: 'pending' | 'completed' | 'skipped'
-      little_win_category: 'academic' | 'self_care' | 'social' | 'personal' | 'other'
+      [_ in never]: never
     }
   }
+}
+
+// Helper types for easier access
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type Insertable<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type Updatable<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+
+// Specific table types for convenience
+export type User = Tables<'users'>
+export type Checkin = Tables<'checkins'>
+export type Assignment = Tables<'assignments'>
+export type LittleWin = Tables<'little_wins'>
+
+// Type guards
+export function isAssignment(obj: any): obj is Assignment {
+  return obj && typeof obj.id === 'string' && 'due_at' in obj && 'impact' in obj
+}
+
+export function isUser(obj: any): obj is User {
+  return obj && typeof obj.id === 'string' && 'email' in obj
 }

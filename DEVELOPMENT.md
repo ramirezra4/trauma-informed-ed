@@ -456,6 +456,166 @@ rm -rf node_modules package-lock.json && npm install
 - [Web Accessibility Guidelines](https://www.w3.org/WAI/WCAG21/quickref/) - WCAG 2.1 compliance
 - [Color Accessibility](https://webaim.org/resources/contrastchecker/) - Contrast checking tools
 
+## Code Refactoring Plan
+
+### Priority Refactors Before Complex Features
+
+#### Phase 1: Type System Consolidation (30 minutes)
+**Goal**: Single source of truth for all types
+
+1. **Delete redundant type files:**
+   - Remove `types/database.ts` (old incomplete version)
+   - Remove `types/assignment.ts` (now in supabase.ts)
+   - Remove `types/user.ts` (now in supabase.ts)
+
+2. **Update all imports:**
+   ```typescript
+   // Before
+   import { Assignment } from '@/types/assignment'
+   import { UserProfile } from '@/types/user'
+
+   // After
+   import { Assignment, User, Checkin } from '@/types/supabase'
+   ```
+
+3. **Verify no broken imports:**
+   - Run `npm run build` to catch any missed imports
+   - Update any remaining references
+
+#### Phase 2: Data Access Layer Standardization (1-2 hours)
+**Goal**: One consistent pattern for database operations
+
+**Option A: Migrate to Typed Wrapper (Recommended)**
+```typescript
+// Migrate from:
+const assignments = await getUserAssignments(userId)
+
+// To:
+const assignments = await db.assignments.getAll(userId)
+```
+
+Benefits:
+- Full type safety at compile time
+- Consistent error handling
+- Easier to test and mock
+- Clear separation of concerns
+
+Migration steps:
+1. Update `app/assignments/page.tsx` to use `db.assignments`
+2. Update `app/assignments/[id]/page.tsx` to use typed methods
+3. Update `components/AssignmentCard.tsx`
+4. Update check-in related components to use `db.checkins`
+5. Remove old functions from `lib/supabase.ts` once migrated
+
+**Option B: Add Types to Existing Functions**
+```typescript
+// In lib/supabase.ts
+export async function getUserAssignments(userId: string): Promise<Assignment[]> {
+  // Keep existing implementation, just add return types
+}
+```
+
+Benefits:
+- Less code churn
+- Familiar patterns remain
+- Gradual migration possible
+
+#### Phase 3: Error Handling Layer (1 hour)
+**Goal**: Consistent, user-friendly error handling
+
+1. **Create error utility:**
+```typescript
+// lib/errors.ts
+export class AppError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public userMessage: string
+  ) {
+    super(message)
+  }
+}
+
+export function handleDatabaseError(error: unknown): AppError {
+  // Convert Supabase errors to user-friendly messages
+  if (error.code === 'PGRST116') {
+    return new AppError(
+      'Database error',
+      'NOT_FOUND',
+      'We couldn\'t find what you were looking for'
+    )
+  }
+  // ... more error mappings
+}
+```
+
+2. **Implement in data layer:**
+```typescript
+// lib/typed-supabase.ts
+async getById(id: string): Promise<Assignment> {
+  try {
+    const { data, error } = await supabase...
+    if (error) throw handleDatabaseError(error)
+    return data
+  } catch (error) {
+    // Log to monitoring service
+    throw error
+  }
+}
+```
+
+3. **Add loading states:**
+```typescript
+// Custom hook for consistent loading
+export function useAsyncData<T>(
+  asyncFn: () => Promise<T>
+) {
+  const [data, setData] = useState<T>()
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<AppError>()
+  // ... implementation
+}
+```
+
+### Why This Matters for Upcoming Features
+
+**AI Planning Features Will Need:**
+- Strict typing for AI response parsing
+- Complex data relationships (plans → steps → assignments)
+- Error recovery (AI API failures, rate limits)
+
+**Progress Tracking Will Need:**
+- Aggregated data from multiple tables
+- Real-time updates
+- Performance optimization for large datasets
+
+**Without these refactors, you'll face:**
+- Type errors when parsing AI responses
+- Inconsistent error messages confusing users
+- Difficulty debugging which data layer caused issues
+- Performance problems from inefficient queries
+
+### Implementation Timeline
+
+**Week 1: Type System (Do this before any new features)**
+- Day 1: Consolidate types (30 min)
+- Day 2: Update imports, test build (30 min)
+
+**Week 2: Data Layer (Can be done gradually)**
+- Days 3-4: Migrate 2-3 components per day
+- Day 5: Remove deprecated functions
+
+**Week 3: Error Handling (Before AI features)**
+- Day 6: Create error utilities
+- Day 7: Implement in critical paths (auth, assignments)
+
+### Success Metrics
+- [ ] Single types file (`types/supabase.ts`)
+- [ ] All database calls go through one pattern
+- [ ] User-friendly error messages throughout
+- [ ] `npm run build` succeeds without warnings
+- [ ] No `any` types in production code
+
 ## Getting Help
 
 ### Internal Resources

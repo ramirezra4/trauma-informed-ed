@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
+import { Database, Assignment, User, Checkin } from '@/types/supabase'
+import { UserProfile } from '@/types/user'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Create Supabase client (types added at function level for safety)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -164,7 +166,7 @@ export async function saveLittleWin(userId: string, win: {
 }
 
 // Get user profile information
-export async function getUserProfile(userId: string) {
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
   const { data, error } = await supabase
     .from('users')
     .select('full_name, display_name, school, academic_year')
@@ -248,7 +250,7 @@ export async function getLastCheckinTime(userId: string) {
 // Assignment CRUD functions
 
 // Get all assignments for a user
-export async function getUserAssignments(userId: string) {
+export async function getUserAssignments(userId: string): Promise<Assignment[]> {
   await ensureUserExists(userId)
 
   const { data, error } = await supabase
@@ -258,11 +260,11 @@ export async function getUserAssignments(userId: string) {
     .order('due_at', { ascending: true })
 
   if (error) throw error
-  return data
+  return data || []
 }
 
 // Get recent assignments (for card display)
-export async function getRecentAssignments(userId: string, limit = 5) {
+export async function getRecentAssignments(userId: string, limit = 5): Promise<Assignment[]> {
   await ensureUserExists(userId)
 
   const { data, error } = await supabase
@@ -274,11 +276,11 @@ export async function getRecentAssignments(userId: string, limit = 5) {
     .limit(limit)
 
   if (error) throw error
-  return data
+  return data || []
 }
 
 // Get a single assignment by ID
-export async function getAssignment(assignmentId: string) {
+export async function getAssignment(assignmentId: string): Promise<Assignment | null> {
   const { data, error } = await supabase
     .from('assignments')
     .select('*')
@@ -297,7 +299,7 @@ export async function saveAssignment(userId: string, assignment: {
   due_at: string
   impact: number
   est_minutes: number
-}) {
+}): Promise<Assignment> {
   await ensureUserExists(userId)
 
   const { data, error } = await supabase
@@ -316,7 +318,7 @@ export async function saveAssignment(userId: string, assignment: {
     .single()
 
   if (error) throw error
-  return data
+  return data!
 }
 
 // Update an assignment
@@ -328,7 +330,7 @@ export async function updateAssignment(assignmentId: string, updates: {
   impact?: number
   est_minutes?: number
   status?: 'not_started' | 'in_progress' | 'completed' | 'dropped'
-}) {
+}): Promise<Assignment> {
   const { data, error } = await supabase
     .from('assignments')
     .update({
@@ -340,7 +342,7 @@ export async function updateAssignment(assignmentId: string, updates: {
     .single()
 
   if (error) throw error
-  return data
+  return data!
 }
 
 // Delete an assignment
