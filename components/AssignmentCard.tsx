@@ -337,9 +337,9 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
                     <div
                       key={assignment.id}
                       onClick={() => router.push(`/assignments/${assignment.id}`)}
-                      className="flex items-center justify-between p-2 bg-neutral-50 rounded-md hover:bg-neutral-100 cursor-pointer transition-colors"
+                      className="p-2 bg-neutral-50 rounded-md hover:bg-neutral-100 cursor-pointer transition-colors"
                     >
-                      <div className="flex-1">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium text-neutral-500 uppercase">
                             {assignment.course}
@@ -348,17 +348,17 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
                             {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
                           </span>
                         </div>
-                        <p className="text-sm text-neutral-800 truncate">{assignment.title}</p>
-                        {assignment.description && (
-                          <p className="text-xs text-neutral-500 truncate mt-1">{assignment.description}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
                         <p className="text-xs text-neutral-600">{formatDueDate(assignment.due_at)}</p>
-                        <span className={`inline-block text-xs px-2 py-1 rounded-full ${statusColors[assignment.status]}`}>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-sm text-neutral-800 truncate flex-1 mr-2">{assignment.title}</p>
+                        <span className={`inline-block text-xs px-2 py-1 rounded-full whitespace-nowrap ${statusColors[assignment.status]}`}>
                           {assignment.status.replace('_', ' ')}
                         </span>
                       </div>
+                      {assignment.description && (
+                        <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{assignment.description}</p>
+                      )}
                     </div>
                   ))}
                   {assignments.length > 3 && (
