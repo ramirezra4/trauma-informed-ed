@@ -55,6 +55,12 @@ export default function AssignmentsPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Autocomplete states
+  const [courseSuggestions, setCourseSuggestions] = useState<string[]>([])
+  const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
+  const [showCourseSuggestions, setShowCourseSuggestions] = useState(false)
+  const [showTitleSuggestions, setShowTitleSuggestions] = useState(false)
+
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!loading && !user) {
@@ -70,6 +76,12 @@ export default function AssignmentsPage() {
         try {
           const data = await getUserAssignments(user.id)
           setAssignments(data)
+
+          // Extract unique course names and titles for suggestions
+          const uniqueCourses = [...new Set(data.map(a => a.course))].sort()
+          const uniqueTitles = [...new Set(data.map(a => a.title))].sort()
+          setCourseSuggestions(uniqueCourses)
+          setTitleSuggestions(uniqueTitles)
         } catch (error) {
           console.error('Error loading assignments:', error)
           setAssignments([])
@@ -282,14 +294,19 @@ export default function AssignmentsPage() {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Course
                   </label>
                   <input
                     type="text"
                     value={formData.course}
-                    onChange={(e) => setFormData(prev => ({ ...prev, course: e.target.value }))}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, course: e.target.value }))
+                      setShowCourseSuggestions(true)
+                    }}
+                    onFocus={() => setShowCourseSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowCourseSuggestions(false), 200)}
                     placeholder="e.g., PSYC 101"
                     required
                     className="
@@ -297,6 +314,31 @@ export default function AssignmentsPage() {
                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
                     "
                   />
+                  {showCourseSuggestions && courseSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-300 rounded-md shadow-lg max-h-48 overflow-auto">
+                      {courseSuggestions
+                        .filter(course =>
+                          formData.course ? course.toLowerCase().includes(formData.course.toLowerCase()) : true
+                        )
+                        .map((course, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onMouseDown={() => {
+                              setFormData(prev => ({ ...prev, course }))
+                              setShowCourseSuggestions(false)
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-neutral-100 focus:bg-neutral-100 focus:outline-none"
+                          >
+                            {course}
+                          </button>
+                        ))
+                      }
+                      {formData.course && courseSuggestions.filter(course => course.toLowerCase().includes(formData.course.toLowerCase())).length === 0 && (
+                        <p className="px-3 py-2 text-sm text-neutral-500">No matches - this will be a new course</p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -331,14 +373,19 @@ export default function AssignmentsPage() {
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Title
                 </label>
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, title: e.target.value }))
+                    setShowTitleSuggestions(true)
+                  }}
+                  onFocus={() => setShowTitleSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowTitleSuggestions(false), 200)}
                   placeholder="e.g., Final Research Paper"
                   required
                   className="
@@ -346,6 +393,31 @@ export default function AssignmentsPage() {
                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
                   "
                 />
+                {showTitleSuggestions && titleSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-300 rounded-md shadow-lg max-h-48 overflow-auto">
+                    {titleSuggestions
+                      .filter(title =>
+                        formData.title ? title.toLowerCase().includes(formData.title.toLowerCase()) : true
+                      )
+                      .map((title, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onMouseDown={() => {
+                            setFormData(prev => ({ ...prev, title }))
+                            setShowTitleSuggestions(false)
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-neutral-100 focus:bg-neutral-100 focus:outline-none"
+                        >
+                          {title}
+                        </button>
+                      ))
+                    }
+                    {formData.title && titleSuggestions.filter(title => title.toLowerCase().includes(formData.title.toLowerCase())).length === 0 && (
+                      <p className="px-3 py-2 text-sm text-neutral-500">No matches - this will be a new assignment title</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>

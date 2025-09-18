@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getRecentAssignments, saveAssignment } from '@/lib/supabase'
+import { getRecentAssignments, saveAssignment, getUserAssignments } from '@/lib/supabase'
 
 interface Assignment {
   id: string
@@ -53,14 +53,30 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // Load recent assignments
+  // Autocomplete states
+  const [courseSuggestions, setCourseSuggestions] = useState<string[]>([])
+  const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
+  const [showCourseSuggestions, setShowCourseSuggestions] = useState(false)
+  const [showTitleSuggestions, setShowTitleSuggestions] = useState(false)
+
+  // Load recent assignments and extract suggestions
   useEffect(() => {
     const loadAssignments = async () => {
       if (user) {
         setLoading(true)
         try {
+          // Load recent assignments for display
           const data = await getRecentAssignments(user.id)
           setAssignments(data)
+
+          // Load all assignments to extract suggestions
+          const allAssignments = await getUserAssignments(user.id)
+
+          // Extract unique course names and titles for suggestions
+          const uniqueCourses = [...new Set(allAssignments.map(a => a.course))].sort()
+          const uniqueTitles = [...new Set(allAssignments.map(a => a.title))].sort()
+          setCourseSuggestions(uniqueCourses)
+          setTitleSuggestions(uniqueTitles)
         } catch (error) {
           console.error('Error loading assignments:', error)
           setAssignments([])
@@ -91,6 +107,13 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
       // Reload assignments
       const data = await getRecentAssignments(user.id)
       setAssignments(data)
+
+      // Reload all assignments to update suggestions
+      const allAssignments = await getUserAssignments(user.id)
+      const uniqueCourses = [...new Set(allAssignments.map(a => a.course))].sort()
+      const uniqueTitles = [...new Set(allAssignments.map(a => a.title))].sort()
+      setCourseSuggestions(uniqueCourses)
+      setTitleSuggestions(uniqueTitles)
 
       // Call optional callback
       onQuickAdd?.({
@@ -155,20 +178,50 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Course
               </label>
               <input
                 type="text"
                 value={quickData.course}
-                onChange={(e) => setQuickData(prev => ({ ...prev, course: e.target.value }))}
+                onChange={(e) => {
+                  setQuickData(prev => ({ ...prev, course: e.target.value }))
+                  setShowCourseSuggestions(true)
+                }}
+                onFocus={() => setShowCourseSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowCourseSuggestions(false), 200)}
                 placeholder="e.g., PSYC 101"
                 className="
                   w-full px-3 py-2 border border-neutral-300 rounded-md text-sm
                   focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                 "
               />
+              {showCourseSuggestions && courseSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-300 rounded-md shadow-lg max-h-36 overflow-auto">
+                  {courseSuggestions
+                    .filter(course =>
+                      quickData.course ? course.toLowerCase().includes(quickData.course.toLowerCase()) : true
+                    )
+                    .map((course, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onMouseDown={() => {
+                          setQuickData(prev => ({ ...prev, course }))
+                          setShowCourseSuggestions(false)
+                        }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 focus:bg-neutral-100 focus:outline-none text-sm"
+                      >
+                        {course}
+                      </button>
+                    ))
+                  }
+                  {quickData.course && courseSuggestions.filter(course => course.toLowerCase().includes(quickData.course.toLowerCase())).length === 0 && (
+                    <p className="px-3 py-1.5 text-xs text-neutral-500">No matches - new course</p>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -201,20 +254,50 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
             />
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-neutral-700 mb-1">
               Title
             </label>
             <input
               type="text"
               value={quickData.title}
-              onChange={(e) => setQuickData(prev => ({ ...prev, title: e.target.value }))}
+              onChange={(e) => {
+                setQuickData(prev => ({ ...prev, title: e.target.value }))
+                setShowTitleSuggestions(true)
+              }}
+              onFocus={() => setShowTitleSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowTitleSuggestions(false), 200)}
               placeholder="e.g., Final Research Paper"
               className="
                 w-full px-3 py-2 border border-neutral-300 rounded-md text-sm
                 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
               "
             />
+            {showTitleSuggestions && titleSuggestions.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-300 rounded-md shadow-lg max-h-36 overflow-auto">
+                {titleSuggestions
+                  .filter(title =>
+                    quickData.title ? title.toLowerCase().includes(quickData.title.toLowerCase()) : true
+                  )
+                  .map((title, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onMouseDown={() => {
+                        setQuickData(prev => ({ ...prev, title }))
+                        setShowTitleSuggestions(false)
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 focus:bg-neutral-100 focus:outline-none text-sm"
+                    >
+                      {title}
+                    </button>
+                  ))
+                }
+                {quickData.title && titleSuggestions.filter(title => title.toLowerCase().includes(quickData.title.toLowerCase())).length === 0 && (
+                  <p className="px-3 py-1.5 text-xs text-neutral-500">No matches - new assignment</p>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
