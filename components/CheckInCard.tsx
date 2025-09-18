@@ -165,8 +165,8 @@ export default function CheckInCard({ onStartFullFlow, onQuickCheckin }: CheckIn
             Taking a moment to check in with yourself can help you understand your needs and build momentum for the day.
           </p>
           
-          {/* Benefits preview */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          {/* Benefits preview - Commented out to save space */}
+          {/* <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="text-center p-2 bg-neutral-50 rounded-md">
               <div className="text-sm">🎯</div>
               <div className="text-xs text-neutral-600 mt-1">Get suggestions</div>
@@ -179,7 +179,7 @@ export default function CheckInCard({ onStartFullFlow, onQuickCheckin }: CheckIn
               <div className="text-sm">🎉</div>
               <div className="text-xs text-neutral-600 mt-1">Celebrate wins</div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Action buttons */}

@@ -2,7 +2,7 @@
 
 This document provides context, learning resources, and development practices for the Gentle Path trauma-informed student support platform.
 
-## 🎉 Current Status: MVP Milestone 1+ Complete
+## 🎉 Current Status: Milestone 2 - Assignment Tracking Complete
 
 **What's Working:**
 - Full user authentication system with Supabase
@@ -23,12 +23,16 @@ This document provides context, learning resources, and development practices fo
 - Email and password change functionality
 - Navigation menu accessible from hamburger button
 - Performance optimizations with useCallback hooks
+- **NEW: Assignment Management System** - Full assignment tracking with priority levels, due dates, status tracking
+- **NEW: Assignment Card Component** - Quick add functionality and assignment preview on home dashboard
+- **NEW: Assignments Page** - Dedicated page for comprehensive assignment management
 
 **Current Database Schema:**
 - `users` - Enhanced user profiles with full_name, school, academic_year, consent tracking
 - `checkins` - Daily mood/energy/focus check-ins
 - `little_wins` - Achievement tracking
-- `assignments`, `plans`, `plan_steps` - Ready for future features
+- `assignments` - **ACTIVE** - Full assignment tracking with course, title, due dates, priority levels (1-5), estimated time, status management
+- `plans`, `plan_steps` - Ready for future features
 - All tables have proper RLS policies and foreign key relationships
 
 ## Technology Stack Overview
@@ -155,6 +159,50 @@ background: '#fefcfa'          // Warm white background
 - [Vitest Documentation](https://vitest.dev/) - Testing framework
 - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) - Component testing
 - [Testing Best Practices](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library) - Avoiding common mistakes
+
+## Assignment Management System
+
+### Features Implemented
+- **Assignment Card Component** (`components/AssignmentCard.tsx`):
+  - Dashboard widget showing upcoming assignments preview
+  - Quick-add functionality with inline form
+  - Priority system using emoji indicators (🐢 to 🔥)
+  - Status tracking (not_started, in_progress, completed, dropped)
+  - Due date formatting with relative time display
+  - Trauma-informed language ("one step at a time")
+
+- **Full Assignment Page** (`app/assignments/page.tsx`):
+  - Comprehensive assignment management interface
+  - CRUD operations for assignments
+  - Course-based organization
+  - Time estimation tracking
+  - Priority-based visual hierarchy
+
+- **Database Integration**:
+  - Full assignments table with proper RLS policies
+  - Supabase helper functions (`getRecentAssignments`, `saveAssignment`)
+  - Real-time updates when assignments are added
+  - User isolation ensuring privacy
+
+### Assignment Data Model
+```typescript
+interface Assignment {
+  id: string
+  course: string           // e.g., "PSYC 101"
+  title: string           // e.g., "Final Research Paper"
+  due_at: string          // ISO date string
+  impact: number          // Priority level 1-5 (🐢🍃⭐⚡🔥)
+  est_minutes: number     // Estimated completion time
+  status: 'not_started' | 'in_progress' | 'completed' | 'dropped'
+}
+```
+
+### Trauma-Informed Design Elements
+- **Gentle Language**: "One step at a time — you've got this"
+- **Visual Priority System**: Emoji-based impact levels reduce anxiety
+- **Flexible Time Estimates**: Options from 30 minutes to 4+ hours
+- **Status Options**: Including "dropped" to remove pressure
+- **No Shame Language**: Avoids terms like "overdue" or "failed"
 
 ## Development Workflow
 
@@ -285,10 +333,11 @@ useEffect(() => {
 ### File Organization
 ```
 app/
-├── auth/            # Authentication pages  
+├── auth/            # Authentication pages
 ├── checkin/         # Full check-in flow
 ├── profile-setup/   # Profile completion flow
 ├── settings/        # User settings page
+├── assignments/     # Assignment management page with full CRUD functionality
 └── api/
     ├── suggestions/ # AI suggestions endpoint
     └── future/      # Additional API routes
@@ -296,10 +345,11 @@ app/
 components/
 ├── AuthForm.tsx         # Sign in/up form
 ├── CheckInCard.tsx      # Home page check-in widget
-├── CheckInForm.tsx      # Full check-in form  
+├── CheckInForm.tsx      # Full check-in form
 ├── GrowthVisual.tsx     # Progress visualization
 ├── NavigationMenu.tsx   # Slide-over navigation
 ├── SmartSuggestionBox.tsx # Daily quotes
+├── AssignmentCard.tsx   # Assignment tracking widget with quick-add functionality
 └── [other components]   # Flow-specific components
 
 contexts/

@@ -137,18 +137,18 @@ export default function GrowthVisual({
               key={key}
               onClick={() => setActiveMetric(key as keyof GrowthStats)}
               className={`
-                relative p-2 rounded-lg border transition-all
+                relative p-1.5 rounded-lg border transition-all
                 focus:outline-none focus:ring-2 focus:ring-primary-500
                 ${colorClasses.bg} ${colorClasses.text} ${colorClasses.border}
                 ${!isActive ? colorClasses.hover : ''}
               `}
             >
               {/* Visual bar */}
-              <div className="mb-2">
-                <div className="h-8 bg-black/10 rounded-sm overflow-hidden">
-                  <div 
+              <div className="mb-1">
+                <div className="h-4 bg-black/10 rounded-sm overflow-hidden">
+                  <div
                     className="bg-current rounded-sm transition-all duration-500"
-                    style={{ 
+                    style={{
                       height: `${Math.max(heightPercentage, 10)}%`,
                       opacity: isActive ? 1 : 0.7
                     }}
@@ -157,7 +157,7 @@ export default function GrowthVisual({
               </div>
 
               {/* Value */}
-              <div className={`text-lg font-bold ${colorClasses.text}`}>
+              <div className={`text-sm font-bold ${colorClasses.text}`}>
                 {metric.value}
               </div>
 

@@ -7,6 +7,7 @@ import { getProgressStats, saveCheckin, getUserProfile } from '@/lib/supabase'
 import SmartSuggestionBox from '@/components/SmartSuggestionBox'
 import GrowthVisual from '@/components/GrowthVisual'
 import CheckInCard from '@/components/CheckInCard'
+import AssignmentCard from '@/components/AssignmentCard'
 import NavigationMenu from '@/components/NavigationMenu'
 
 interface LittleWin {
@@ -79,6 +80,10 @@ export default function Home() {
     router.push('/checkin')
   }
 
+  const handleViewAllAssignments = () => {
+    router.push('/assignments')
+  }
+
   const handleQuickCheckin = async (data: { mood: number; energy: number; focus: number }) => {
     if (!user) return
     
@@ -144,7 +149,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-background to-neutral-50 px-4 py-6">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6 relative">
           {/* Menu Button */}
@@ -181,16 +186,17 @@ export default function Home() {
             <SmartSuggestionBox />
           </div>
 
-          {/* Two Column Layout for Growth Visual and Check-in Card */}
+          {/* Optimized Layout - Assignment left, Growth/Check-in right */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Growth Visual */}
+            {/* Assignment Card - Left side, tall for multiple items */}
             <div>
-              <GrowthVisual stats={stats} loading={statsLoading} />
+              <AssignmentCard onViewAll={handleViewAllAssignments} />
             </div>
 
-            {/* Check-in Card */}
-            <div>
-              <CheckInCard 
+            {/* Right Column - Growth Visual and Check-in stacked */}
+            <div className="space-y-4">
+              <GrowthVisual stats={stats} loading={statsLoading} />
+              <CheckInCard
                 onStartFullFlow={handleStartFullFlow}
                 onQuickCheckin={handleQuickCheckin}
               />

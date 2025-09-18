@@ -244,3 +244,96 @@ export async function getLastCheckinTime(userId: string) {
   if (error) return null
   return data.created_at
 }
+
+// Assignment CRUD functions
+
+// Get all assignments for a user
+export async function getUserAssignments(userId: string) {
+  await ensureUserExists(userId)
+
+  const { data, error } = await supabase
+    .from('assignments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('due_at', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+// Get recent assignments (for card display)
+export async function getRecentAssignments(userId: string, limit = 5) {
+  await ensureUserExists(userId)
+
+  const { data, error } = await supabase
+    .from('assignments')
+    .select('*')
+    .eq('user_id', userId)
+    .in('status', ['not_started', 'in_progress'])
+    .order('due_at', { ascending: true })
+    .limit(limit)
+
+  if (error) throw error
+  return data
+}
+
+// Create a new assignment
+export async function saveAssignment(userId: string, assignment: {
+  course: string
+  title: string
+  due_at: string
+  impact: number
+  est_minutes: number
+}) {
+  await ensureUserExists(userId)
+
+  const { data, error } = await supabase
+    .from('assignments')
+    .insert({
+      user_id: userId,
+      course: assignment.course,
+      title: assignment.title,
+      due_at: assignment.due_at,
+      impact: assignment.impact,
+      est_minutes: assignment.est_minutes,
+      status: 'not_started'
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// Update an assignment
+export async function updateAssignment(assignmentId: string, updates: {
+  course?: string
+  title?: string
+  due_at?: string
+  impact?: number
+  est_minutes?: number
+  status?: 'not_started' | 'in_progress' | 'completed' | 'dropped'
+}) {
+  const { data, error } = await supabase
+    .from('assignments')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', assignmentId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// Delete an assignment
+export async function deleteAssignment(assignmentId: string) {
+  const { error } = await supabase
+    .from('assignments')
+    .delete()
+    .eq('id', assignmentId)
+
+  if (error) throw error
+}
