@@ -40,6 +40,17 @@ export default function AssignmentDetailPage() {
   const [assignment, setAssignment] = useState<Assignment | null>(null)
   const [assignmentLoading, setAssignmentLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editData, setEditData] = useState({
+    course: '',
+    title: '',
+    description: '',
+    due_date: '',
+    due_time: '',
+    impact: 3,
+    est_minutes: 60
+  })
+  const [isSaving, setIsSaving] = useState(false)
 
   const assignmentId = params.id as string
 
@@ -62,6 +73,17 @@ export default function AssignmentDetailPage() {
             setError('Assignment not found')
           } else {
             setAssignment(data)
+            // Initialize edit data
+            const dueDate = new Date(data.due_at)
+            setEditData({
+              course: data.course,
+              title: data.title,
+              description: data.description || '',
+              due_date: dueDate.toISOString().split('T')[0],
+              due_time: dueDate.toTimeString().slice(0, 5),
+              impact: data.impact,
+              est_minutes: data.est_minutes
+            })
           }
         } catch (error) {
           console.error('Error loading assignment:', error)
@@ -96,6 +118,53 @@ export default function AssignmentDetailPage() {
     } catch (error) {
       console.error('Error deleting assignment:', error)
       alert('Sorry, there was an error deleting the assignment.')
+    }
+  }
+
+  const handleEdit = () => {
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = () => {
+    if (!assignment) return
+    // Reset edit data to current assignment values
+    const dueDate = new Date(assignment.due_at)
+    setEditData({
+      course: assignment.course,
+      title: assignment.title,
+      description: assignment.description || '',
+      due_date: dueDate.toISOString().split('T')[0],
+      due_time: dueDate.toTimeString().slice(0, 5),
+      impact: assignment.impact,
+      est_minutes: assignment.est_minutes
+    })
+    setIsEditing(false)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!assignment) return
+
+    setIsSaving(true)
+    try {
+      const dueDateTime = new Date(`${editData.due_date}T${editData.due_time}`)
+      const updatedData = {
+        course: editData.course,
+        title: editData.title,
+        description: editData.description || null,
+        due_at: dueDateTime.toISOString(),
+        impact: editData.impact,
+        est_minutes: editData.est_minutes
+      }
+
+      const updated = await updateAssignment(assignment.id, updatedData)
+      setAssignment(updated)
+      setIsEditing(false)
+      alert('Assignment updated successfully! 📚')
+    } catch (error) {
+      console.error('Error updating assignment:', error)
+      alert('Sorry, there was an error updating the assignment.')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -199,57 +268,187 @@ export default function AssignmentDetailPage() {
 
           {/* Assignment Header */}
           <div className="bg-white rounded-lg border border-neutral-200 p-6 mb-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
-                    {assignment.course}
-                  </span>
-                  <span className="text-xl">
-                    {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
-                  </span>
-                  <span className={`inline-block text-xs px-2 py-1 rounded-full border ${statusColors[assignment.status]}`}>
-                    {assignment.status.replace('_', ' ')}
-                  </span>
-                </div>
-                <h1 className="text-2xl font-semibold text-neutral-800 mb-3">
-                  {assignment.title}
-                </h1>
-                {assignment.description && (
-                  <div className="mb-4">
-                    <h3 className="text-sm font-medium text-neutral-700 mb-2">Description</h3>
-                    <p className="text-neutral-600 leading-relaxed whitespace-pre-wrap">
-                      {assignment.description}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
+            {isEditing ? (
+              // Edit Mode
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-neutral-800 mb-4">Edit Assignment</h2>
 
-            {/* Assignment Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 border-t border-neutral-200">
-              <div>
-                <h3 className="text-sm font-medium text-neutral-700 mb-1">Due Date</h3>
-                <p className="text-neutral-600">{formatDueDate(assignment.due_at)}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-neutral-700 mb-1">Estimated Time</h3>
-                <p className="text-neutral-600">{formatEstTime(assignment.est_minutes)}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-neutral-700 mb-1">Priority Level</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{impactEmojis[assignment.impact as keyof typeof impactEmojis]}</span>
-                  <span className="text-neutral-600">{assignment.impact}/5</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Course
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.course}
+                      onChange={(e) => setEditData(prev => ({ ...prev, course: e.target.value }))}
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editData.due_date}
+                      onChange={(e) => setEditData(prev => ({ ...prev, due_date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Due Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editData.due_time}
+                    onChange={(e) => setEditData(prev => ({ ...prev, due_time: e.target.value }))}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.title}
+                    onChange={(e) => setEditData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Description <span className="text-neutral-500">(optional)</span>
+                  </label>
+                  <textarea
+                    value={editData.description}
+                    onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Priority Level
+                    </label>
+                    <div className="flex justify-between items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setEditData(prev => ({ ...prev, impact: value }))}
+                          className={`
+                            min-w-8 h-8 px-1 rounded-full border-2 transition-all text-xs flex items-center justify-center
+                            focus:outline-none focus:ring-2 focus:ring-primary-500
+                            ${editData.impact === value
+                              ? 'border-primary-500 bg-primary-50'
+                              : 'border-neutral-200 hover:border-primary-300'
+                            }
+                          `}
+                        >
+                          {impactEmojis[value as keyof typeof impactEmojis]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Estimated Time
+                    </label>
+                    <select
+                      value={editData.est_minutes}
+                      onChange={(e) => setEditData(prev => ({ ...prev, est_minutes: parseInt(e.target.value) }))}
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    >
+                      <option value={30}>30 minutes</option>
+                      <option value={60}>1 hour</option>
+                      <option value={120}>2 hours</option>
+                      <option value={180}>3 hours</option>
+                      <option value={240}>4+ hours</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-neutral-200">
+                  <button
+                    onClick={handleCancelEdit}
+                    className="flex-1 py-2 px-4 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-500 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={isSaving || !editData.course || !editData.title || !editData.due_date}
+                    className="flex-1 py-2 px-4 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
                 </div>
               </div>
+            ) : (
+              // Display Mode
               <div>
-                <h3 className="text-sm font-medium text-neutral-700 mb-1">Status</h3>
-                <span className={`inline-block text-xs px-2 py-1 rounded-full border ${statusColors[assignment.status]}`}>
-                  {assignment.status.replace('_', ' ')}
-                </span>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
+                        {assignment.course}
+                      </span>
+                      <span className="text-xl">
+                        {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
+                      </span>
+                      <span className={`inline-block text-xs px-2 py-1 rounded-full border ${statusColors[assignment.status]}`}>
+                        {assignment.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <h1 className="text-2xl font-semibold text-neutral-800 mb-3">
+                      {assignment.title}
+                    </h1>
+                    {assignment.description && (
+                      <div className="mb-4">
+                        <h3 className="text-sm font-medium text-neutral-700 mb-2">Description</h3>
+                        <p className="text-neutral-600 leading-relaxed whitespace-pre-wrap">
+                          {assignment.description}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Assignment Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 border-t border-neutral-200">
+                  <div>
+                    <h3 className="text-sm font-medium text-neutral-700 mb-1">Due Date</h3>
+                    <p className="text-neutral-600">{formatDueDate(assignment.due_at)}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-neutral-700 mb-1">Estimated Time</h3>
+                    <p className="text-neutral-600">{formatEstTime(assignment.est_minutes)}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-neutral-700 mb-1">Priority Level</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{impactEmojis[assignment.impact as keyof typeof impactEmojis]}</span>
+                      <span className="text-neutral-600">{assignment.impact}/5</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-neutral-700 mb-1">Status</h3>
+                    <span className={`inline-block text-xs px-2 py-1 rounded-full border ${statusColors[assignment.status]}`}>
+                      {assignment.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -283,10 +482,12 @@ export default function AssignmentDetailPage() {
           {/* Other Actions */}
           <div className="flex gap-3 pt-4 border-t border-neutral-200">
             <button
-              onClick={() => router.push('/assignments')}
+              onClick={handleEdit}
+              disabled={isEditing}
               className="
                 flex-1 py-2 px-4 border border-neutral-300 text-neutral-700 rounded-lg
                 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-500
+                disabled:opacity-50 disabled:cursor-not-allowed
                 transition-colors
               "
             >
@@ -294,9 +495,11 @@ export default function AssignmentDetailPage() {
             </button>
             <button
               onClick={handleDelete}
+              disabled={isEditing}
               className="
                 px-4 py-2 text-red-600 border border-red-300 rounded-lg
                 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500
+                disabled:opacity-50 disabled:cursor-not-allowed
                 transition-colors
               "
             >
