@@ -12,11 +12,13 @@ interface GrowthStats {
 interface GrowthVisualProps {
   stats?: GrowthStats
   loading?: boolean
+  onAddWin?: () => void  // Callback for adding a little win
 }
 
-export default function GrowthVisual({ 
+export default function GrowthVisual({
   stats = { checkins: 0, completed: 0, wins: 0, streak: 0 },
-  loading = false
+  loading = false,
+  onAddWin
 }: GrowthVisualProps) {
   const [activeMetric, setActiveMetric] = useState<keyof GrowthStats>('checkins')
 
@@ -82,10 +84,11 @@ export default function GrowthVisual({
     return (
       <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
         <div className="p-4 pb-2">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-1">
             <h2 className="text-lg font-display text-neutral-800">Your Growth</h2>
-            <span className="text-xs text-neutral-500">This month</span>
+            <div className="w-20 h-8 bg-neutral-100 rounded-lg animate-pulse"></div>
           </div>
+          <div className="text-xs text-neutral-500 mb-3">This month</div>
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-2"></div>
             <p className="text-sm text-neutral-600">Loading your progress...</p>
@@ -99,13 +102,32 @@ export default function GrowthVisual({
     <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
       {/* Header */}
       <div className="p-4 pb-2">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-1">
           <h2 className="text-lg font-display text-neutral-800">
             Your Growth
           </h2>
-          <span className="text-xs text-neutral-500">
-            This month
-          </span>
+          {/* Add Little Win button */}
+          {onAddWin && (
+            <button
+              onClick={onAddWin}
+              className="
+                flex items-center gap-1 px-3 py-1.5
+                bg-success-50 hover:bg-success-100
+                border border-success-200 rounded-lg
+                text-success-600 text-sm font-medium
+                transition-colors focus:outline-none
+                focus:ring-2 focus:ring-success-500 focus:ring-offset-1
+              "
+              aria-label="Add a little win"
+            >
+              <span className="text-base">✨</span>
+              <span>Add Win</span>
+            </button>
+          )}
+        </div>
+        {/* Time frame indicator moved below */}
+        <div className="text-xs text-neutral-500 mb-3">
+          This month
         </div>
 
         {/* Active metric display */}

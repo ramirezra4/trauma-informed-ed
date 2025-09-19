@@ -135,6 +135,11 @@ export default function Home() {
     router.push('/auth')
   }
 
+  const handleAddWin = () => {
+    // Navigate to check-in flow, starting at the wins step
+    router.push('/checkin?step=wins')
+  }
+
   // Show loading while checking auth
   if (loading) {
     return (
@@ -205,7 +210,11 @@ export default function Home() {
 
             {/* Right Column - Growth Visual and Check-in stacked */}
             <div className="space-y-4">
-              <GrowthVisual stats={stats} loading={statsLoading} />
+              <GrowthVisual
+                stats={stats}
+                loading={statsLoading}
+                onAddWin={handleAddWin}
+              />
               <CheckInCard
                 onStartFullFlow={handleStartFullFlow}
                 onQuickCheckin={handleQuickCheckin}

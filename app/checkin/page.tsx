@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { db } from '@/lib/typed-supabase'
 import CheckInForm from '@/components/CheckInForm'
@@ -35,8 +35,12 @@ type FlowStep = 'checkin' | 'suggestions' | 'timer' | 'wins' | 'complete'
 
 export default function CheckInFlow() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading } = useAuth()
-  const [currentStep, setCurrentStep] = useState<FlowStep>('checkin')
+
+  // Check if we should start at a specific step (e.g., wins)
+  const startStep = (searchParams.get('step') as FlowStep) || 'checkin'
+  const [currentStep, setCurrentStep] = useState<FlowStep>(startStep)
   const [checkinData, setCheckinData] = useState<CheckInData | null>(null)
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null)
   const [suggestions, setSuggestions] = useState<any>(null)
@@ -127,26 +131,26 @@ export default function CheckInFlow() {
   }
 
   const handleFlowComplete = async () => {
-    // Save the check-in to database when flow is complete
-    if (!user || !checkinData) return
+    // Only save check-in if we have check-in data (i.e., went through full flow)
+    if (user && checkinData) {
+      try {
+        const checkin = await db.checkins.create(user.id, {
+          mood: checkinData.mood,
+          energy: checkinData.energy,
+          focus: checkinData.focus,
+          notes: checkinData.notes || null
+        })
 
-    try {
-      const checkin = await db.checkins.create(user.id, {
-        mood: checkinData.mood,
-        energy: checkinData.energy,
-        focus: checkinData.focus,
-        notes: checkinData.notes || null
-      })
+        if (!checkin) {
+          throw new Error('Failed to save checkin')
+        }
 
-      if (!checkin) {
-        throw new Error('Failed to save checkin')
+        console.log('Check-in saved successfully:', checkin)
+      } catch (error) {
+        console.error('Error saving check-in:', error)
+        // We don't show an alert here since the user is at the end of the flow
+        // The check-in experience was still valuable even if save failed
       }
-
-      console.log('Check-in saved successfully:', checkin)
-    } catch (error) {
-      console.error('Error saving check-in:', error)
-      // We don't show an alert here since the user is at the end of the flow
-      // The check-in experience was still valuable even if save failed
     }
 
     setCurrentStep('complete')
@@ -169,10 +173,14 @@ export default function CheckInFlow() {
         setCurrentStep('suggestions')
         break
       case 'wins':
-        // If they came from timer, go back to timer; otherwise to suggestions
-        if (selectedSuggestion?.type === 'focus') {
+        // If started at wins (from home page), go back home
+        if (startStep === 'wins') {
+          router.push('/')
+        } else if (selectedSuggestion?.type === 'focus') {
+          // If they came from timer, go back to timer
           setCurrentStep('timer')
         } else {
+          // Otherwise go back to suggestions
           setCurrentStep('suggestions')
         }
         break
@@ -275,7 +283,10 @@ export default function CheckInFlow() {
                 Wonderful work!
               </h2>
               <p className="text-neutral-600">
-                You've completed your check-in flow. You're building meaningful momentum.
+                {checkinData
+                  ? "You've completed your check-in flow. You're building meaningful momentum."
+                  : "You've recorded your win! Every small victory counts."
+                }
               </p>
               <button
                 onClick={handleBackToHome}
