@@ -164,6 +164,14 @@ export type Checkin = Tables<'checkins'>
 export type Assignment = Tables<'assignments'>
 export type LittleWin = Tables<'little_wins'>
 
+// UserProfile type for profile update operations
+export interface UserProfile {
+  full_name: string | null
+  display_name: string | null
+  school: string | null
+  academic_year: 'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate' | 'other' | null
+}
+
 // Type guards
 export function isAssignment(obj: any): obj is Assignment {
   return obj && typeof obj.id === 'string' && 'due_at' in obj && 'impact' in obj

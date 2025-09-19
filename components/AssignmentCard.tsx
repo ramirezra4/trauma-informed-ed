@@ -3,18 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getRecentAssignments, saveAssignment, getUserAssignments } from '@/lib/supabase'
-
-interface Assignment {
-  id: string
-  course: string
-  title: string
-  description: string | null
-  due_at: string
-  impact: number
-  est_minutes: number
-  status: 'not_started' | 'in_progress' | 'completed' | 'dropped'
-}
+import { db } from '@/lib/typed-supabase'
+import { Assignment } from '@/types/supabase'
 
 interface AssignmentCardProps {
   onViewAll: () => void
@@ -66,11 +56,11 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
         setLoading(true)
         try {
           // Load recent assignments for display
-          const data = await getRecentAssignments(user.id)
+          const data = await db.assignments.getRecent(user.id)
           setAssignments(data)
 
           // Load all assignments to extract suggestions
-          const allAssignments = await getUserAssignments(user.id)
+          const allAssignments = await db.assignments.getAll(user.id)
 
           // Extract unique course names and titles for suggestions
           const uniqueCourses = [...new Set(allAssignments.map(a => a.course))].sort()
@@ -95,21 +85,26 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
     try {
       // Save to database
       const dueDateTime = new Date(`${quickData.due_date}T${quickData.due_time}`)
-      await saveAssignment(user.id, {
+      const newAssignment = await db.assignments.create(user.id, {
         course: quickData.course,
         title: quickData.title,
         description: quickData.description || null,
         due_at: dueDateTime.toISOString(),
         impact: quickData.impact,
-        est_minutes: quickData.est_minutes
+        est_minutes: quickData.est_minutes,
+        status: 'not_started'
       })
 
+      if (!newAssignment) {
+        throw new Error('Failed to create assignment')
+      }
+
       // Reload assignments
-      const data = await getRecentAssignments(user.id)
+      const data = await db.assignments.getRecent(user.id)
       setAssignments(data)
 
       // Reload all assignments to update suggestions
-      const allAssignments = await getUserAssignments(user.id)
+      const allAssignments = await db.assignments.getAll(user.id)
       const uniqueCourses = [...new Set(allAssignments.map(a => a.course))].sort()
       const uniqueTitles = [...new Set(allAssignments.map(a => a.title))].sort()
       setCourseSuggestions(uniqueCourses)

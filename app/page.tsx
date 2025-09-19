@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getProgressStats, saveCheckin, getUserProfile } from '@/lib/supabase'
+import { db } from '@/lib/typed-supabase'
+import { getProgressStats, getUserProfile } from '@/lib/supabase'
 import SmartSuggestionBox from '@/components/SmartSuggestionBox'
 import GrowthVisual from '@/components/GrowthVisual'
 import CheckInCard from '@/components/CheckInCard'
@@ -89,12 +90,16 @@ export default function Home() {
     
     try {
       // Save check-in to Supabase
-      await saveCheckin(user.id, {
+      const checkin = await db.checkins.create(user.id, {
         mood: data.mood,
         energy: data.energy,
         focus: data.focus,
         notes: 'Quick check-in'
       })
+
+      if (!checkin) {
+        throw new Error('Failed to save checkin')
+      }
       
       // Reload stats to reflect the new check-in
       await loadUserStats()

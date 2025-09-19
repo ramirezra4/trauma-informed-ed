@@ -1,14 +1,76 @@
 /**
  * Typed Supabase Wrapper
  * This file provides type-safe wrappers around Supabase queries
- * allowing us to gradually add type safety without breaking existing code
+ * with consistent error handling and return patterns
  */
 
 import { supabase } from './supabase'
-import { Assignment, User, Checkin, LittleWin } from '@/types/supabase'
+import {
+  Assignment,
+  User,
+  Checkin,
+  LittleWin,
+  UserProfile,
+  Insertable,
+  Updatable
+} from '@/types/supabase'
 
-// Type-safe query builders
+// Typed database wrapper with consistent error handling
 export const db = {
+  // User operations
+  users: {
+    async getById(id: string): Promise<User | null> {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        console.error('Error fetching user:', error)
+        return null
+      }
+      return data
+    },
+
+    async getProfile(userId: string): Promise<Partial<User> | null> {
+      const { data, error } = await supabase
+        .from('users')
+        .select('full_name, display_name, school, academic_year')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        console.error('Error fetching profile:', error)
+        return null
+      }
+      return data
+    },
+
+    async updateProfile(userId: string, updates: UserProfile): Promise<User | null> {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating profile:', error)
+        return null
+      }
+      return data
+    },
+
+    checkProfileComplete(user: User): boolean {
+      return !!(user.full_name && user.school && user.academic_year)
+    }
+  },
+
+  // Assignment operations
   assignments: {
     async getAll(userId: string): Promise<Assignment[]> {
       const { data, error } = await supabase
@@ -17,8 +79,11 @@ export const db = {
         .eq('user_id', userId)
         .order('due_at', { ascending: true })
 
-      if (error) throw error
-      return (data as Assignment[]) || []
+      if (error) {
+        console.error('Error fetching assignments:', error)
+        return []
+      }
+      return data || []
     },
 
     async getById(id: string): Promise<Assignment | null> {
@@ -28,11 +93,46 @@ export const db = {
         .eq('id', id)
         .single()
 
-      if (error) throw error
-      return data as Assignment | null
+      if (error) {
+        console.error('Error fetching assignment:', error)
+        return null
+      }
+      return data
     },
 
-    async create(userId: string, assignment: Omit<Assignment, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Assignment> {
+    async getRecent(userId: string, limit = 5): Promise<Assignment[]> {
+      const { data, error } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('user_id', userId)
+        .in('status', ['not_started', 'in_progress'])
+        .order('due_at', { ascending: true })
+        .limit(limit)
+
+      if (error) {
+        console.error('Error fetching recent assignments:', error)
+        return []
+      }
+      return data || []
+    },
+
+    async getUpcoming(userId: string, days = 7): Promise<Assignment[]> {
+      const { data, error } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('due_at', new Date().toISOString())
+        .lte('due_at', new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString())
+        .order('due_at', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching upcoming assignments:', error)
+        return []
+      }
+      return data || []
+    },
+
+    async create(userId: string, assignment: Omit<Assignment, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Assignment | null> {
       const { data, error } = await supabase
         .from('assignments')
         .insert({
@@ -42,11 +142,14 @@ export const db = {
         .select()
         .single()
 
-      if (error) throw error
-      return data as Assignment
+      if (error) {
+        console.error('Error creating assignment:', error)
+        return null
+      }
+      return data
     },
 
-    async update(id: string, updates: Partial<Omit<Assignment, 'id' | 'user_id' | 'created_at'>>): Promise<Assignment> {
+    async update(id: string, updates: Partial<Omit<Assignment, 'id' | 'user_id' | 'created_at'>>): Promise<Assignment | null> {
       const { data, error } = await supabase
         .from('assignments')
         .update({
@@ -57,22 +160,82 @@ export const db = {
         .select()
         .single()
 
-      if (error) throw error
-      return data as Assignment
+      if (error) {
+        console.error('Error updating assignment:', error)
+        return null
+      }
+      return data
     },
 
-    async delete(id: string): Promise<void> {
+    async delete(id: string): Promise<boolean> {
       const { error } = await supabase
         .from('assignments')
         .delete()
         .eq('id', id)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error deleting assignment:', error)
+        return false
+      }
+      return true
     }
   },
 
+  // Check-in operations
   checkins: {
-    async create(userId: string, checkin: Omit<Checkin, 'id' | 'user_id' | 'created_at'>): Promise<Checkin> {
+    async getAll(userId: string): Promise<Checkin[]> {
+      const { data, error } = await supabase
+        .from('checkins')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching checkins:', error)
+        return []
+      }
+      return data || []
+    },
+
+    async getRecent(userId: string, days = 7): Promise<Checkin[]> {
+      const { data, error } = await supabase
+        .from('checkins')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching recent checkins:', error)
+        return []
+      }
+      return data || []
+    },
+
+    async getToday(userId: string): Promise<Checkin | null> {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      const { data, error } = await supabase
+        .from('checkins')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('created_at', today.toISOString())
+        .lt('created_at', tomorrow.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error fetching today\'s checkin:', error)
+        return null
+      }
+      return data
+    },
+
+    async create(userId: string, checkin: Omit<Checkin, 'id' | 'user_id' | 'created_at'>): Promise<Checkin | null> {
       const { data, error } = await supabase
         .from('checkins')
         .insert({
@@ -82,53 +245,105 @@ export const db = {
         .select()
         .single()
 
-      if (error) throw error
-      return data as Checkin
+      if (error) {
+        console.error('Error creating checkin:', error)
+        return null
+      }
+      return data
     },
 
-    async getRecent(userId: string, days: number = 7): Promise<Checkin[]> {
+    async getStats(userId: string): Promise<{
+      totalCheckIns: number
+      currentStreak: number
+      avgMood: number
+      avgEnergy: number
+      avgFocus: number
+    }> {
+      const checkins = await this.getRecent(userId, 30)
+
+      if (checkins.length === 0) {
+        return {
+          totalCheckIns: 0,
+          currentStreak: 0,
+          avgMood: 0,
+          avgEnergy: 0,
+          avgFocus: 0
+        }
+      }
+
+      // Calculate averages
+      const totals = checkins.reduce(
+        (acc, checkin) => ({
+          mood: acc.mood + checkin.mood,
+          energy: acc.energy + checkin.energy,
+          focus: acc.focus + checkin.focus
+        }),
+        { mood: 0, energy: 0, focus: 0 }
+      )
+
+      // Calculate streak
+      let currentStreak = 0
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      for (let i = 0; i < 30; i++) {
+        const checkDate = new Date(today)
+        checkDate.setDate(checkDate.getDate() - i)
+
+        const hasCheckin = checkins.some(c => {
+          const checkinDate = new Date(c.created_at)
+          return checkinDate.toDateString() === checkDate.toDateString()
+        })
+
+        if (hasCheckin) {
+          currentStreak++
+        } else if (i > 0) {
+          break
+        }
+      }
+
+      return {
+        totalCheckIns: checkins.length,
+        currentStreak,
+        avgMood: Number((totals.mood / checkins.length).toFixed(1)),
+        avgEnergy: Number((totals.energy / checkins.length).toFixed(1)),
+        avgFocus: Number((totals.focus / checkins.length).toFixed(1))
+      }
+    }
+  },
+
+  // Little wins operations
+  littleWins: {
+    async getAll(userId: string): Promise<LittleWin[]> {
       const { data, error } = await supabase
-        .from('checkins')
+        .from('little_wins')
         .select('*')
         .eq('user_id', userId)
-        .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      return (data as Checkin[]) || []
-    }
-  },
-
-  users: {
-    async getProfile(userId: string): Promise<Partial<User> | null> {
-      const { data, error } = await supabase
-        .from('users')
-        .select('full_name, display_name, school, academic_year')
-        .eq('id', userId)
-        .single()
-
-      if (error) throw error
-      return data as Partial<User> | null
+      if (error) {
+        console.error('Error fetching little wins:', error)
+        return []
+      }
+      return data || []
     },
 
-    async updateProfile(userId: string, updates: Partial<Omit<User, 'id' | 'email' | 'created_at'>>): Promise<User> {
+    async getRecent(userId: string, limit = 5): Promise<LittleWin[]> {
       const { data, error } = await supabase
-        .from('users')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-        .select()
-        .single()
+        .from('little_wins')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
 
-      if (error) throw error
-      return data as User
-    }
-  },
+      if (error) {
+        console.error('Error fetching recent little wins:', error)
+        return []
+      }
+      return data || []
+    },
 
-  littleWins: {
-    async create(userId: string, win: Omit<LittleWin, 'id' | 'user_id' | 'created_at'>): Promise<LittleWin> {
+    async create(userId: string, win: Omit<LittleWin, 'id' | 'user_id' | 'created_at'>): Promise<LittleWin | null> {
       const { data, error } = await supabase
         .from('little_wins')
         .insert({
@@ -138,8 +353,11 @@ export const db = {
         .select()
         .single()
 
-      if (error) throw error
-      return data as LittleWin
+      if (error) {
+        console.error('Error creating little win:', error)
+        return null
+      }
+      return data
     }
   }
 }

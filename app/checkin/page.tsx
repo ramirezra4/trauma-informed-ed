@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { saveCheckin, saveLittleWin } from '@/lib/supabase'
+import { db } from '@/lib/typed-supabase'
 import CheckInForm from '@/components/CheckInForm'
 import SuggestionsDisplay from '@/components/SuggestionsDisplay'
 import FocusTimer from '@/components/FocusTimer'
@@ -64,12 +64,16 @@ export default function CheckInFlow() {
 
     try {
       // Save check-in to Supabase first
-      await saveCheckin(user.id, {
+      const checkin = await db.checkins.create(user.id, {
         mood: data.mood,
         energy: data.energy,
         focus: data.focus,
-        notes: data.notes || ''
+        notes: data.notes || null
       })
+
+      if (!checkin) {
+        throw new Error('Failed to save checkin')
+      }
 
       // Call AI suggestions API
       const response = await fetch('/api/suggestions', {
@@ -119,10 +123,14 @@ export default function CheckInFlow() {
     if (!user) return
     
     try {
-      await saveLittleWin(user.id, {
+      const savedWin = await db.littleWins.create(user.id, {
         category: win.category,
         description: win.description
       })
+
+      if (!savedWin) {
+        throw new Error('Failed to save little win')
+      }
       console.log('Little win saved:', win)
     } catch (error) {
       console.error('Error saving little win:', error)

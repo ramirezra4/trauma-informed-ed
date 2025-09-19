@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getUserAssignments, saveAssignment, updateAssignment, deleteAssignment } from '@/lib/supabase'
+import { db } from '@/lib/typed-supabase'
 import PageHeader from '@/components/PageHeader'
 import { Assignment } from '@/types/supabase'
 
@@ -62,7 +62,7 @@ export default function AssignmentsPage() {
       if (user) {
         setAssignmentsLoading(true)
         try {
-          const data = await getUserAssignments(user.id)
+          const data = await db.assignments.getAll(user.id)
           setAssignments(data)
 
           // Extract unique course names and titles for suggestions
@@ -117,7 +117,7 @@ export default function AssignmentsPage() {
 
       if (editingAssignment) {
         // Update existing assignment
-        const updated = await updateAssignment(editingAssignment.id, {
+        const updated = await db.assignments.update(editingAssignment.id, {
           course: formData.course,
           title: formData.title,
           description: formData.description || null,
@@ -126,19 +126,28 @@ export default function AssignmentsPage() {
           est_minutes: formData.est_minutes
         })
 
-        setAssignments(prev => prev.map(a => a.id === updated.id ? updated : a))
+        if (updated) {
+          setAssignments(prev => prev.map(a => a.id === updated.id ? updated : a))
+        } else {
+          throw new Error('Failed to update assignment')
+        }
       } else {
         // Create new assignment
-        const newAssignment = await saveAssignment(user.id, {
+        const newAssignment = await db.assignments.create(user.id, {
           course: formData.course,
           title: formData.title,
           description: formData.description || null,
           due_at: dueDateTime.toISOString(),
           impact: formData.impact,
-          est_minutes: formData.est_minutes
+          est_minutes: formData.est_minutes,
+          status: 'not_started'
         })
 
-        setAssignments(prev => [...prev, newAssignment])
+        if (newAssignment) {
+          setAssignments(prev => [...prev, newAssignment])
+        } else {
+          throw new Error('Failed to create assignment')
+        }
       }
 
       // Reset form
@@ -155,8 +164,12 @@ export default function AssignmentsPage() {
 
   const handleStatusUpdate = async (assignmentId: string, status: Assignment['status']) => {
     try {
-      const updated = await updateAssignment(assignmentId, { status })
-      setAssignments(prev => prev.map(a => a.id === updated.id ? updated : a))
+      const updated = await db.assignments.update(assignmentId, { status })
+      if (updated) {
+        setAssignments(prev => prev.map(a => a.id === updated.id ? updated : a))
+      } else {
+        throw new Error('Failed to update status')
+      }
     } catch (error) {
       console.error('Error updating assignment status:', error)
       alert('Sorry, there was an error updating the assignment.')
@@ -167,8 +180,12 @@ export default function AssignmentsPage() {
     if (!confirm('Are you sure you want to delete this assignment?')) return
 
     try {
-      await deleteAssignment(assignmentId)
-      setAssignments(prev => prev.filter(a => a.id !== assignmentId))
+      const success = await db.assignments.delete(assignmentId)
+      if (success) {
+        setAssignments(prev => prev.filter(a => a.id !== assignmentId))
+      } else {
+        throw new Error('Failed to delete assignment')
+      }
     } catch (error) {
       console.error('Error deleting assignment:', error)
       alert('Sorry, there was an error deleting the assignment.')

@@ -8,17 +8,13 @@ export type Json =
 
 // Trauma-informed database schema
 export interface Database {
-  PostgrestVersion: '12'
   public: {
     Tables: {
       users: {
         Row: {
           id: string
           email: string
-          full_name: string | null
           display_name: string | null
-          school: string | null
-          academic_year: 'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate' | 'other' | null
           consent_at: string
           created_at: string
           updated_at: string
@@ -26,10 +22,7 @@ export interface Database {
         Insert: {
           id?: string
           email: string
-          full_name?: string | null
           display_name?: string | null
-          school?: string | null
-          academic_year?: 'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate' | 'other' | null
           consent_at: string
           created_at?: string
           updated_at?: string
@@ -37,10 +30,7 @@ export interface Database {
         Update: {
           id?: string
           email?: string
-          full_name?: string | null
           display_name?: string | null
-          school?: string | null
-          academic_year?: 'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate' | 'other' | null
           consent_at?: string
           created_at?: string
           updated_at?: string
