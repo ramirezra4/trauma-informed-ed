@@ -741,7 +741,7 @@ export default function AssignmentsPage() {
                   <>
                     <div className="mb-4">
                       {/* Course and priority */}
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
                           {assignment.course}
                         </span>
