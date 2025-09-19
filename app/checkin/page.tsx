@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { db } from '@/lib/typed-supabase'
@@ -33,7 +33,7 @@ interface LittleWin {
 
 type FlowStep = 'checkin' | 'suggestions' | 'timer' | 'wins' | 'complete'
 
-export default function CheckInFlow() {
+function CheckInFlowContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading } = useAuth()
@@ -310,5 +310,20 @@ export default function CheckInFlow() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function CheckInFlow() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-background to-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-2"></div>
+          <p className="text-neutral-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CheckInFlowContent />
+    </Suspense>
   )
 }
