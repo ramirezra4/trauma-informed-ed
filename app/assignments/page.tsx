@@ -26,12 +26,12 @@ export default function AssignmentsPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
   const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [filteredAssignments, setFilteredAssignments] = useState<Assignment[]>([])
   const [assignmentsLoading, setAssignmentsLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'due_date' | 'priority' | 'course'>('due_date')
+  const [showCompleted, setShowCompleted] = useState(false)
+  const [showDropped, setShowDropped] = useState(false)
   const [formData, setFormData] = useState({
     course: '',
     title: '',
@@ -81,17 +81,9 @@ export default function AssignmentsPage() {
     loadAssignments()
   }, [user])
 
-  // Filter and sort assignments
-  useEffect(() => {
-    let filtered = assignments
-
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(a => a.status === statusFilter)
-    }
-
-    // Sort assignments
-    filtered = [...filtered].sort((a, b) => {
+  // Sort assignments and separate by status
+  const sortAssignments = (assignmentList: Assignment[]) => {
+    return [...assignmentList].sort((a, b) => {
       switch (sortBy) {
         case 'due_date':
           return new Date(a.due_at).getTime() - new Date(b.due_at).getTime()
@@ -103,9 +95,18 @@ export default function AssignmentsPage() {
           return 0
       }
     })
+  }
 
-    setFilteredAssignments(filtered)
-  }, [assignments, statusFilter, sortBy])
+  // Separate assignments by status
+  const activeAssignments = sortAssignments(
+    assignments.filter(a => a.status === 'not_started' || a.status === 'in_progress')
+  )
+  const completedAssignments = sortAssignments(
+    assignments.filter(a => a.status === 'completed')
+  )
+  const droppedAssignments = sortAssignments(
+    assignments.filter(a => a.status === 'dropped')
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -519,45 +520,24 @@ export default function AssignmentsPage() {
           </div>
         )}
 
-        {/* Filters and Sort */}
+        {/* Sort Options */}
         <div className="bg-white rounded-lg border border-neutral-200 p-4 mb-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Filter by Status
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="
-                  px-3 py-2 border border-neutral-300 rounded-md text-sm
-                  focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
-                "
-              >
-                <option value="all">All</option>
-                <option value="not_started">Not Started</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="dropped">Dropped</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Sort by
-              </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'due_date' | 'priority' | 'course')}
-                className="
-                  px-3 py-2 border border-neutral-300 rounded-md text-sm
-                  focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
-                "
-              >
-                <option value="due_date">Due Date</option>
-                <option value="priority">Priority</option>
-                <option value="course">Course</option>
-              </select>
-            </div>
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium text-neutral-700">
+              Sort by:
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'due_date' | 'priority' | 'course')}
+              className="
+                px-3 py-2 border border-neutral-300 rounded-md text-sm
+                focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+              "
+            >
+              <option value="due_date">Due Date</option>
+              <option value="priority">Priority</option>
+              <option value="course">Course</option>
+            </select>
           </div>
         </div>
 
@@ -568,33 +548,31 @@ export default function AssignmentsPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-600 border-t-transparent mx-auto mb-2"></div>
               <p className="text-neutral-600">Loading assignments...</p>
             </div>
-          ) : filteredAssignments.length === 0 ? (
+          ) : assignments.length === 0 ? (
             <div className="text-center py-8 bg-white rounded-lg border border-neutral-200">
               <div className="text-4xl mb-4">📚</div>
               <h3 className="text-lg font-medium text-neutral-800 mb-2">
-                {statusFilter === 'all' ? 'No assignments yet' : `No ${statusFilter.replace('_', ' ')} assignments`}
+                No assignments yet
               </h3>
               <p className="text-neutral-600 mb-4">
-                {statusFilter === 'all'
-                  ? 'Get started by adding your first assignment!'
-                  : 'Try changing the filter to see more assignments.'
-                }
+                Get started by adding your first assignment!
               </p>
-              {statusFilter === 'all' && (
-                <button
-                  onClick={() => setShowAddForm(true)}
-                  className="
-                    px-4 py-2 bg-orange-500 text-white rounded-lg font-medium
-                    hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500
-                    transition-colors
-                  "
-                >
-                  Add Your First Assignment
-                </button>
-              )}
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="
+                  px-4 py-2 bg-orange-500 text-white rounded-lg font-medium
+                  hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500
+                  transition-colors
+                "
+              >
+                Add Your First Assignment
+              </button>
             </div>
           ) : (
-            filteredAssignments.map((assignment) => (
+            <>
+              {/* Active Assignments */}
+              {activeAssignments.length > 0 ? (
+                activeAssignments.map((assignment) => (
               <div key={assignment.id} className="bg-white rounded-lg border border-neutral-200 p-4 sm:p-6">
                 {editingAssignment?.id === assignment.id ? (
                   // Inline Edit Form
@@ -839,7 +817,211 @@ export default function AssignmentsPage() {
                   </>
                 )}
               </div>
-            ))
+                ))
+              ) : (
+                <div className="text-center py-6 bg-white rounded-lg border border-neutral-200">
+                  <p className="text-neutral-600">No active assignments</p>
+                </div>
+              )}
+
+              {/* Completed Assignments - Collapsible */}
+              {completedAssignments.length > 0 && (
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowCompleted(!showCompleted)}
+                    className="w-full flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
+                  >
+                    <span className="font-medium text-green-700">
+                      Completed ({completedAssignments.length})
+                    </span>
+                    <svg
+                      className={`w-5 h-5 text-green-600 transition-transform ${showCompleted ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showCompleted && (
+                    <div className="mt-4 space-y-4">
+                      {completedAssignments.map((assignment) => (
+                        <div key={assignment.id} className="bg-white rounded-lg border border-neutral-200 p-4 sm:p-6">
+                          {editingAssignment?.id === assignment.id ? (
+                            // Inline Edit Form (reuse existing edit form code)
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                              {/* Edit form content - same as above */}
+                            </form>
+                          ) : (
+                            // Normal Assignment Card View
+                            <>
+                              <div className="mb-4 opacity-75">
+                                {/* Course and priority */}
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
+                                    {assignment.course}
+                                  </span>
+                                  <span className="text-lg">
+                                    {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
+                                  </span>
+                                </div>
+
+                                {/* Title aligned with action buttons */}
+                                <div className="flex items-start gap-2 mb-3">
+                                  <h3
+                                    onClick={() => router.push(`/assignments/${assignment.id}`)}
+                                    className="text-lg font-semibold text-neutral-800 cursor-pointer hover:text-orange-600 transition-colors flex-1 min-w-0 line-through"
+                                  >
+                                    {assignment.title}
+                                  </h3>
+                                  {/* Action buttons */}
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <button
+                                      onClick={() => startEdit(assignment)}
+                                      className="
+                                        px-2 sm:px-3 py-1 text-xs sm:text-sm text-neutral-600 hover:text-neutral-800
+                                        border border-neutral-300 rounded-md hover:bg-neutral-50
+                                        transition-colors
+                                      "
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDelete(assignment.id)}
+                                      className="
+                                        px-2 sm:px-3 py-1 text-xs sm:text-sm text-red-600 hover:text-red-800
+                                        border border-red-300 rounded-md hover:bg-red-50
+                                        transition-colors
+                                      "
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                                {assignment.description && (
+                                  <p className="text-sm text-neutral-600 mb-3 leading-relaxed">
+                                    {assignment.description}
+                                  </p>
+                                )}
+
+                                {/* Due date and time estimate - stack on very small screens */}
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-neutral-600">
+                                  <span>{formatDueDate(assignment.due_at)}</span>
+                                  <span>Est. {formatEstTime(assignment.est_minutes)}</span>
+                                </div>
+                              </div>
+
+                              {/* Status Update Buttons */}
+                              <div className="flex gap-2 flex-wrap">
+                                {['not_started', 'in_progress', 'completed', 'dropped'].map((status) => (
+                                  <button
+                                    key={status}
+                                    onClick={() => handleStatusUpdate(assignment.id, status as Assignment['status'])}
+                                    disabled={assignment.status === status}
+                                    className={`
+                                      px-2 sm:px-3 py-1 text-xs rounded-md border transition-colors flex-shrink-0
+                                      ${assignment.status === status
+                                        ? `${statusColors[status as keyof typeof statusColors]} opacity-75 cursor-not-allowed`
+                                        : 'border-neutral-300 text-neutral-600 hover:bg-neutral-50'
+                                      }
+                                    `}
+                                  >
+                                    <span className="hidden sm:inline">Mark as </span>{status.replace('_', ' ')}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Dropped Assignments - Collapsible */}
+              {droppedAssignments.length > 0 && (
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowDropped(!showDropped)}
+                    className="w-full flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
+                  >
+                    <span className="font-medium text-red-700">
+                      Dropped ({droppedAssignments.length})
+                    </span>
+                    <svg
+                      className={`w-5 h-5 text-red-600 transition-transform ${showDropped ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showDropped && (
+                    <div className="mt-4 space-y-4">
+                      {droppedAssignments.map((assignment) => (
+                        <div key={assignment.id} className="bg-white rounded-lg border border-neutral-200 p-4 sm:p-6">
+                          {/* Same card structure as completed, with opacity */}
+                          <div className="mb-4 opacity-50">
+                            {/* Course and priority */}
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
+                                {assignment.course}
+                              </span>
+                              <span className="text-lg">
+                                {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
+                              </span>
+                            </div>
+
+                            {/* Title aligned with action buttons */}
+                            <div className="flex items-start gap-2 mb-3">
+                              <h3 className="text-lg font-semibold text-neutral-800 flex-1 min-w-0 line-through">
+                                {assignment.title}
+                              </h3>
+                              {/* Action buttons */}
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <button
+                                  onClick={() => handleDelete(assignment.id)}
+                                  className="
+                                    px-2 sm:px-3 py-1 text-xs sm:text-sm text-red-600 hover:text-red-800
+                                    border border-red-300 rounded-md hover:bg-red-50
+                                    transition-colors
+                                  "
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                            {assignment.description && (
+                              <p className="text-sm text-neutral-600 mb-3 leading-relaxed">
+                                {assignment.description}
+                              </p>
+                            )}
+
+                            {/* Due date and time estimate - stack on very small screens */}
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-neutral-600">
+                              <span>{formatDueDate(assignment.due_at)}</span>
+                              <span>Est. {formatEstTime(assignment.est_minutes)}</span>
+                            </div>
+                          </div>
+
+                          {/* Status Update Buttons - only show reactivate option */}
+                          <div className="flex gap-2 flex-wrap">
+                            <button
+                              onClick={() => handleStatusUpdate(assignment.id, 'not_started')}
+                              className="px-2 sm:px-3 py-1 text-xs rounded-md border border-neutral-300 text-neutral-600 hover:bg-neutral-50 transition-colors flex-shrink-0"
+                            >
+                              Reactivate
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
