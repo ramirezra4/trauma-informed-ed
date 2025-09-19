@@ -595,7 +595,7 @@ export default function AssignmentsPage() {
             </div>
           ) : (
             filteredAssignments.map((assignment) => (
-              <div key={assignment.id} className="bg-white rounded-lg border border-neutral-200 p-6">
+              <div key={assignment.id} className="bg-white rounded-lg border border-neutral-200 p-4 sm:p-6">
                 {editingAssignment?.id === assignment.id ? (
                   // Inline Edit Form
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -761,56 +761,62 @@ export default function AssignmentsPage() {
                 ) : (
                   // Normal Assignment Card View
                   <>
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                    <div className="mb-4">
+                      {/* Mobile-optimized header */}
+                      <div className="flex flex-wrap items-start gap-2 mb-3">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
                             {assignment.course}
                           </span>
                           <span className="text-lg">
                             {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
                           </span>
-                          <span className={`inline-block text-xs px-2 py-1 rounded-full border ${statusColors[assignment.status]}`}>
-                            {assignment.status.replace('_', ' ')}
-                          </span>
                         </div>
-                        <h3
-                          onClick={() => router.push(`/assignments/${assignment.id}`)}
-                          className="text-lg font-semibold text-neutral-800 mb-2 cursor-pointer hover:text-orange-600 transition-colors"
-                        >
-                          {assignment.title}
-                        </h3>
-                        {assignment.description && (
-                          <p className="text-sm text-neutral-600 mb-3 leading-relaxed">
-                            {assignment.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-neutral-600">
-                          <span>{formatDueDate(assignment.due_at)}</span>
-                          <span>Est. {formatEstTime(assignment.est_minutes)}</span>
+                        <span className={`inline-block text-xs px-2 py-1 rounded-full border flex-shrink-0 ${statusColors[assignment.status]}`}>
+                          {assignment.status.replace('_', ' ')}
+                        </span>
+                        {/* Action buttons moved to header on mobile, end of row on desktop */}
+                        <div className="flex items-center gap-2 ml-auto">
+                          <button
+                            onClick={() => startEdit(assignment)}
+                            className="
+                              px-2 sm:px-3 py-1 text-xs sm:text-sm text-neutral-600 hover:text-neutral-800
+                              border border-neutral-300 rounded-md hover:bg-neutral-50
+                              transition-colors
+                            "
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(assignment.id)}
+                            className="
+                              px-2 sm:px-3 py-1 text-xs sm:text-sm text-red-600 hover:text-red-800
+                              border border-red-300 rounded-md hover:bg-red-50
+                              transition-colors
+                            "
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => startEdit(assignment)}
-                          className="
-                            px-3 py-1 text-sm text-neutral-600 hover:text-neutral-800
-                            border border-neutral-300 rounded-md hover:bg-neutral-50
-                            transition-colors
-                          "
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(assignment.id)}
-                          className="
-                            px-3 py-1 text-sm text-red-600 hover:text-red-800
-                            border border-red-300 rounded-md hover:bg-red-50
-                            transition-colors
-                          "
-                        >
-                          Delete
-                        </button>
+
+                      {/* Title and description */}
+                      <h3
+                        onClick={() => router.push(`/assignments/${assignment.id}`)}
+                        className="text-lg font-semibold text-neutral-800 mb-2 cursor-pointer hover:text-orange-600 transition-colors"
+                      >
+                        {assignment.title}
+                      </h3>
+                      {assignment.description && (
+                        <p className="text-sm text-neutral-600 mb-3 leading-relaxed">
+                          {assignment.description}
+                        </p>
+                      )}
+
+                      {/* Due date and time estimate - stack on very small screens */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-neutral-600">
+                        <span>{formatDueDate(assignment.due_at)}</span>
+                        <span>Est. {formatEstTime(assignment.est_minutes)}</span>
                       </div>
                     </div>
 
@@ -822,14 +828,14 @@ export default function AssignmentsPage() {
                           onClick={() => handleStatusUpdate(assignment.id, status as Assignment['status'])}
                           disabled={assignment.status === status}
                           className={`
-                            px-3 py-1 text-xs rounded-md border transition-colors
+                            px-2 sm:px-3 py-1 text-xs rounded-md border transition-colors flex-shrink-0
                             ${assignment.status === status
                               ? `${statusColors[status as keyof typeof statusColors]} opacity-75 cursor-not-allowed`
                               : 'border-neutral-300 text-neutral-600 hover:bg-neutral-50'
                             }
                           `}
                         >
-                          Mark as {status.replace('_', ' ')}
+                          <span className="hidden sm:inline">Mark as </span>{status.replace('_', ' ')}
                         </button>
                       ))}
                     </div>

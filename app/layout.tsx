@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 export const metadata: Metadata = {
   title: "Gentle Path",
   description: "A trauma-informed student support tool that builds momentum with tiny wins and compassionate guidance.",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
 };
 
 export default function RootLayout({
