@@ -762,21 +762,26 @@ export default function AssignmentsPage() {
                   // Normal Assignment Card View
                   <>
                     <div className="mb-4">
-                      {/* Mobile-optimized header */}
-                      <div className="flex flex-wrap items-start gap-2 mb-3">
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
-                            {assignment.course}
-                          </span>
-                          <span className="text-lg">
-                            {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
-                          </span>
-                        </div>
-                        <span className={`inline-block text-xs px-2 py-1 rounded-full border flex-shrink-0 ${statusColors[assignment.status]}`}>
-                          {assignment.status.replace('_', ' ')}
+                      {/* Course and priority */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
+                          {assignment.course}
                         </span>
-                        {/* Action buttons moved to header on mobile, end of row on desktop */}
-                        <div className="flex items-center gap-2 ml-auto">
+                        <span className="text-lg">
+                          {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
+                        </span>
+                      </div>
+
+                      {/* Title aligned with action buttons */}
+                      <div className="flex items-start gap-2 mb-3">
+                        <h3
+                          onClick={() => router.push(`/assignments/${assignment.id}`)}
+                          className="text-lg font-semibold text-neutral-800 cursor-pointer hover:text-orange-600 transition-colors flex-1 min-w-0"
+                        >
+                          {assignment.title}
+                        </h3>
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => startEdit(assignment)}
                             className="
@@ -799,14 +804,6 @@ export default function AssignmentsPage() {
                           </button>
                         </div>
                       </div>
-
-                      {/* Title and description */}
-                      <h3
-                        onClick={() => router.push(`/assignments/${assignment.id}`)}
-                        className="text-lg font-semibold text-neutral-800 mb-2 cursor-pointer hover:text-orange-600 transition-colors"
-                      >
-                        {assignment.title}
-                      </h3>
                       {assignment.description && (
                         <p className="text-sm text-neutral-600 mb-3 leading-relaxed">
                           {assignment.description}
