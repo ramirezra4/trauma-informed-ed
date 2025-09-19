@@ -424,23 +424,31 @@ export default function AssignmentCard({ onViewAll, onQuickAdd }: AssignmentCard
                       onClick={() => router.push(`/assignments/${assignment.id}`)}
                       className="p-2 bg-neutral-50 rounded-md hover:bg-neutral-100 cursor-pointer transition-colors"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                      {/* Mobile-optimized layout */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center justify-between sm:justify-start sm:gap-2 mb-1 sm:mb-0">
                           <span className="text-xs font-medium text-neutral-500 uppercase">
                             {assignment.course}
                           </span>
-                          <span className="text-xs">
+                          <span className="text-xs sm:hidden">
                             {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
                           </span>
                         </div>
-                        <p className="text-xs text-neutral-600">{formatDueDate(assignment.due_at)}</p>
+                        <p className="text-xs text-neutral-600 hidden sm:block">{formatDueDate(assignment.due_at)}</p>
                       </div>
                       <div className="flex items-center justify-between mt-1">
-                        <p className="text-sm text-neutral-800 truncate flex-1 mr-2">{assignment.title}</p>
+                        <div className="flex items-center gap-1.5 flex-1 mr-2">
+                          <p className="text-sm text-neutral-800 truncate">{assignment.title}</p>
+                          <span className="text-xs hidden sm:inline">
+                            {impactEmojis[assignment.impact as keyof typeof impactEmojis]}
+                          </span>
+                        </div>
                         <span className={`inline-block text-xs px-2 py-1 rounded-full whitespace-nowrap ${statusColors[assignment.status]}`}>
                           {assignment.status.replace('_', ' ')}
                         </span>
                       </div>
+                      {/* Due date on mobile - shown below */}
+                      <p className="text-xs text-neutral-600 mt-1 sm:hidden">{formatDueDate(assignment.due_at)}</p>
                       {assignment.description && (
                         <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{assignment.description}</p>
                       )}
