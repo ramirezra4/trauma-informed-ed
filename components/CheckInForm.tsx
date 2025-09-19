@@ -12,6 +12,7 @@ interface CheckInData {
 interface CheckInFormProps {
   onSubmit: (data: CheckInData) => void
   isSubmitting?: boolean
+  initialValues?: Partial<CheckInData>  // Accept initial values
 }
 
 const scaleLabels = {
@@ -67,12 +68,12 @@ function ScaleInput({
   )
 }
 
-export default function CheckInForm({ onSubmit, isSubmitting = false }: CheckInFormProps) {
+export default function CheckInForm({ onSubmit, isSubmitting = false, initialValues }: CheckInFormProps) {
   const [formData, setFormData] = useState<CheckInData>({
-    mood: 3,
-    energy: 3,
-    focus: 3,
-    notes: ''
+    mood: initialValues?.mood ?? 3,
+    energy: initialValues?.energy ?? 3,
+    focus: initialValues?.focus ?? 3,
+    notes: initialValues?.notes ?? ''
   })
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -58,24 +58,12 @@ export default function CheckInFlow() {
 
   const handleCheckinSubmit = async (data: CheckInData) => {
     if (!user) return
-    
+
     setIsLoading(true)
-    setCheckinData(data)
+    setCheckinData(data)  // Store the check-in data in state
 
     try {
-      // Save check-in to Supabase first
-      const checkin = await db.checkins.create(user.id, {
-        mood: data.mood,
-        energy: data.energy,
-        focus: data.focus,
-        notes: data.notes || null
-      })
-
-      if (!checkin) {
-        throw new Error('Failed to save checkin')
-      }
-
-      // Call AI suggestions API
+      // Call AI suggestions API (without saving to database yet)
       const response = await fetch('/api/suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,13 +71,13 @@ export default function CheckInFlow() {
       })
 
       if (!response.ok) throw new Error('Failed to get suggestions')
-      
+
       const suggestionsData = await response.json()
       setSuggestions(suggestionsData)
       setCurrentStep('suggestions')
     } catch (error) {
       console.error('Error:', error)
-      alert('There was an error saving your check-in. Please try again.')
+      alert('There was an error processing your check-in. Please try again.')
       setCurrentStep('checkin')
     } finally {
       setIsLoading(false)
@@ -138,12 +126,62 @@ export default function CheckInFlow() {
     }
   }
 
-  const handleFlowComplete = () => {
+  const handleFlowComplete = async () => {
+    // Save the check-in to database when flow is complete
+    if (!user || !checkinData) return
+
+    try {
+      const checkin = await db.checkins.create(user.id, {
+        mood: checkinData.mood,
+        energy: checkinData.energy,
+        focus: checkinData.focus,
+        notes: checkinData.notes || null
+      })
+
+      if (!checkin) {
+        throw new Error('Failed to save checkin')
+      }
+
+      console.log('Check-in saved successfully:', checkin)
+    } catch (error) {
+      console.error('Error saving check-in:', error)
+      // We don't show an alert here since the user is at the end of the flow
+      // The check-in experience was still valuable even if save failed
+    }
+
     setCurrentStep('complete')
   }
 
   const handleBackToHome = () => {
     router.push('/')
+  }
+
+  const handleGoBack = () => {
+    // Navigate back through the flow steps
+    switch (currentStep) {
+      case 'suggestions':
+        // Clear suggestions when going back to checkin so they regenerate
+        setSuggestions(null)
+        setSelectedSuggestion(null)
+        setCurrentStep('checkin')
+        break
+      case 'timer':
+        setCurrentStep('suggestions')
+        break
+      case 'wins':
+        // If they came from timer, go back to timer; otherwise to suggestions
+        if (selectedSuggestion?.type === 'focus') {
+          setCurrentStep('timer')
+        } else {
+          setCurrentStep('suggestions')
+        }
+        break
+      case 'complete':
+        setCurrentStep('wins')
+        break
+      default:
+        router.push('/')
+    }
   }
 
   const getGreeting = () => {
@@ -176,8 +214,9 @@ export default function CheckInFlow() {
         {/* Navigation Header */}
         <PageHeader
           showBack={true}
-          backPath="/"
-          backLabel="Home"
+          backPath={currentStep === 'checkin' ? '/' : undefined}
+          onBack={currentStep !== 'checkin' ? handleGoBack : undefined}
+          backLabel={currentStep === 'checkin' ? 'Home' : 'Back'}
         />
 
         {/* Page Header */}
@@ -197,9 +236,10 @@ export default function CheckInFlow() {
         {/* Main Content */}
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
           {currentStep === 'checkin' && (
-            <CheckInForm 
+            <CheckInForm
               onSubmit={handleCheckinSubmit}
               isSubmitting={isLoading}
+              initialValues={checkinData || undefined}  // Pass previous values if they exist
             />
           )}
 

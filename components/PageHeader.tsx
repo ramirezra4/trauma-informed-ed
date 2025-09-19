@@ -9,19 +9,23 @@ interface PageHeaderProps {
   showBack?: boolean
   backPath?: string
   backLabel?: string
+  onBack?: () => void  // Custom back handler
 }
 
 export default function PageHeader({
   title,
   showBack = true,
   backPath = '/',
-  backLabel = 'Back'
+  backLabel = 'Back',
+  onBack
 }: PageHeaderProps) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
 
   const handleBack = () => {
-    if (backPath === 'history') {
+    if (onBack) {
+      onBack()  // Use custom handler if provided
+    } else if (backPath === 'history') {
       router.back()
     } else {
       router.push(backPath)
