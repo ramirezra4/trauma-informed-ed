@@ -1,4 +1,4 @@
-# Gentle Path
+# Base
 
 A trauma-informed student support platform that reduces overwhelm, builds momentum with tiny "wins," and offers dignified, compassionate guidance for academics and wellbeing.
 
