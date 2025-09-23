@@ -174,7 +174,7 @@ export default function LandingPage() {
             Built with care for students who need academic support that actually supports them.
           </p>
           <p className="text-sm text-neutral-500 mt-2">
-            Base - Trauma-informed academic support
+            BASE - Trauma-informed academic support
           </p>
         </div>
       </footer>
