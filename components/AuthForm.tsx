@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import Link from 'next/link'
 
 interface AuthFormProps {
   mode: 'signin' | 'signup'
@@ -54,8 +55,8 @@ export default function AuthForm({ mode, onToggleMode }: AuthFormProps) {
           {mode === 'signin' ? 'Welcome Back' : 'Join Base'}
         </h2>
         <p className="text-sm text-neutral-600">
-          {mode === 'signin' 
-            ? 'Continue your growth journey' 
+          {mode === 'signin'
+            ? 'Continue your growth journey'
             : 'Start your supportive learning journey'
           }
         </p>

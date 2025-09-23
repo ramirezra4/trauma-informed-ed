@@ -88,6 +88,17 @@ export default function NavigationMenu({ isOpen, onClose }: NavigationMenuProps)
               </div>
             </button>
 
+            <button
+              onClick={() => handleNavigation('/about')}
+              className="w-full flex items-center px-4 py-3 text-left text-neutral-700 hover:bg-neutral-50 rounded-lg transition-colors"
+            >
+              <span className="mr-3 text-lg">ℹ️</span>
+              <div>
+                <div className="font-medium">About</div>
+                <div className="text-sm text-neutral-500">Learn about Base platform</div>
+              </div>
+            </button>
+
             <hr className="my-4 border-neutral-200" />
 
             <button

@@ -25,7 +25,7 @@ export default function LandingPage() {
                 href="/auth"
                 className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md transition-colors"
               >
-                Get Started
+                Sign In
               </Link>
             )}
           </div>
@@ -40,8 +40,7 @@ export default function LandingPage() {
             <span className="text-primary-600"> gets you</span>
           </h2>
           <p className="text-xl text-neutral-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            A trauma-informed platform designed for students who need academic support without judgment.
-            Build momentum with small wins, gentle guidance, and tools that actually understand your experience.
+            Plan assignments, break them up, and build momentum—without overwhelm.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             {user ? (
@@ -72,7 +71,7 @@ export default function LandingPage() {
       <section className="px-6 py-16 bg-white">
         <div className="max-w-6xl mx-auto">
           <h3 className="text-3xl font-display text-neutral-800 text-center mb-12">
-            Built different, because you are
+            Built for how you actually learn
           </h3>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
