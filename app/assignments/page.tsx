@@ -27,6 +27,8 @@ export default function AssignmentsPage() {
   const { user, loading } = useAuth()
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [assignmentsLoading, setAssignmentsLoading] = useState(true)
+  const [assignmentProgress, setAssignmentProgress] = useState<Record<string, { completed: number; total: number; percentage: number }>>({})
+  const [progressLoading, setProgressLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null)
   const [sortBy, setSortBy] = useState<'due_date' | 'priority' | 'course'>('due_date')
@@ -70,6 +72,9 @@ export default function AssignmentsPage() {
           const uniqueTitles = [...new Set(data.map(a => a.title))].sort()
           setCourseSuggestions(uniqueCourses)
           setTitleSuggestions(uniqueTitles)
+
+          // Load progress for all assignments
+          await loadAssignmentsProgress(data)
         } catch (error) {
           console.error('Error loading assignments:', error)
           setAssignments([])
@@ -80,6 +85,33 @@ export default function AssignmentsPage() {
     }
     loadAssignments()
   }, [user])
+
+  // Load progress for all assignments
+  const loadAssignmentsProgress = async (assignmentList: Assignment[]) => {
+    setProgressLoading(true)
+    try {
+      const progressData: Record<string, { completed: number; total: number; percentage: number }> = {}
+
+      // Load progress for each assignment in parallel
+      await Promise.all(
+        assignmentList.map(async (assignment) => {
+          try {
+            const progress = await db.subtasks.getProgress(assignment.id)
+            progressData[assignment.id] = progress
+          } catch (error) {
+            console.error(`Error loading progress for assignment ${assignment.id}:`, error)
+            progressData[assignment.id] = { completed: 0, total: 0, percentage: 0 }
+          }
+        })
+      )
+
+      setAssignmentProgress(progressData)
+    } catch (error) {
+      console.error('Error loading assignments progress:', error)
+    } finally {
+      setProgressLoading(false)
+    }
+  }
 
   // Sort assignments and separate by status
   const sortAssignments = (assignmentList: Assignment[]) => {
@@ -155,6 +187,9 @@ export default function AssignmentsPage() {
       setFormData({ course: '', title: '', description: '', due_date: '', due_time: '23:59', impact: 3, est_minutes: 60 })
       setShowAddForm(false)
       setEditingAssignment(null)
+
+      // Refresh progress data
+      await loadAssignmentsProgress(assignments)
     } catch (error) {
       console.error('Error saving assignment:', error)
       alert('Sorry, there was an error saving your assignment. Please try again.')
@@ -183,7 +218,13 @@ export default function AssignmentsPage() {
     try {
       const success = await db.assignments.delete(assignmentId)
       if (success) {
-        setAssignments(prev => prev.filter(a => a.id !== assignmentId))
+        const updatedAssignments = assignments.filter(a => a.id !== assignmentId)
+        setAssignments(updatedAssignments)
+        // Update progress data by removing the deleted assignment
+        setAssignmentProgress(prev => {
+          const { [assignmentId]: removed, ...rest } = prev
+          return rest
+        })
       } else {
         throw new Error('Failed to delete assignment')
       }
@@ -237,6 +278,27 @@ export default function AssignmentsPage() {
     const hours = Math.floor(minutes / 60)
     const remainingMin = minutes % 60
     return remainingMin > 0 ? `${hours}h ${remainingMin}m` : `${hours}h`
+  }
+
+  // Render progress indicator for an assignment
+  const renderProgressIndicator = (assignmentId: string) => {
+    const progress = assignmentProgress[assignmentId]
+    if (!progress || progress.total === 0) return null
+
+    return (
+      <div className="mt-2 space-y-1">
+        <div className="flex justify-between text-xs text-neutral-600">
+          <span>{progress.completed}/{progress.total} subtasks</span>
+          <span>{progress.percentage}%</span>
+        </div>
+        <div className="w-full bg-neutral-200 rounded-full h-1.5">
+          <div
+            className="bg-green-500 h-1.5 rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${progress.percentage}%` }}
+          />
+        </div>
+      </div>
+    )
   }
 
   // Show loading while checking auth
@@ -793,6 +855,9 @@ export default function AssignmentsPage() {
                         <span>{formatDueDate(assignment.due_at)}</span>
                         <span>Est. {formatEstTime(assignment.est_minutes)}</span>
                       </div>
+
+                      {/* Progress indicator */}
+                      {renderProgressIndicator(assignment.id)}
                     </div>
 
                     {/* Status Update Buttons */}
@@ -909,6 +974,9 @@ export default function AssignmentsPage() {
                                   <span>{formatDueDate(assignment.due_at)}</span>
                                   <span>Est. {formatEstTime(assignment.est_minutes)}</span>
                                 </div>
+
+                                {/* Progress indicator */}
+                                {renderProgressIndicator(assignment.id)}
                               </div>
 
                               {/* Status Update Buttons */}
@@ -1004,6 +1072,9 @@ export default function AssignmentsPage() {
                               <span>{formatDueDate(assignment.due_at)}</span>
                               <span>Est. {formatEstTime(assignment.est_minutes)}</span>
                             </div>
+
+                            {/* Progress indicator */}
+                            {renderProgressIndicator(assignment.id)}
                           </div>
 
                           {/* Status Update Buttons - only show reactivate option */}

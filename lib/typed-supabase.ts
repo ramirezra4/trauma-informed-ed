@@ -10,6 +10,7 @@ import {
   User,
   Checkin,
   LittleWin,
+  Subtask,
   UserProfile,
   Insertable,
   Updatable
@@ -358,6 +359,130 @@ export const db = {
         return null
       }
       return data
+    }
+  },
+
+  // Subtask operations
+  subtasks: {
+    async getByAssignment(assignmentId: string): Promise<Subtask[]> {
+      const { data, error } = await supabase
+        .from('subtasks')
+        .select('*')
+        .eq('assignment_id', assignmentId)
+        .order('order_position', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching subtasks:', error)
+        return []
+      }
+      return data || []
+    },
+
+    async getById(id: string): Promise<Subtask | null> {
+      const { data, error } = await supabase
+        .from('subtasks')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        console.error('Error fetching subtask:', error)
+        return null
+      }
+      return data
+    },
+
+    async create(assignmentId: string, subtask: Omit<Subtask, 'id' | 'assignment_id' | 'created_at' | 'updated_at'>): Promise<Subtask | null> {
+      // Get the current max order_position for this assignment
+      const { data: existingSubtasks } = await supabase
+        .from('subtasks')
+        .select('order_position')
+        .eq('assignment_id', assignmentId)
+        .order('order_position', { ascending: false })
+        .limit(1)
+
+      const nextPosition = (existingSubtasks?.[0]?.order_position ?? -1) + 1
+
+      const { data, error } = await supabase
+        .from('subtasks')
+        .insert({
+          assignment_id: assignmentId,
+          ...subtask,
+          order_position: nextPosition
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating subtask:', error)
+        return null
+      }
+      return data
+    },
+
+    async update(id: string, updates: Partial<Omit<Subtask, 'id' | 'assignment_id' | 'created_at'>>): Promise<Subtask | null> {
+      const { data, error } = await supabase
+        .from('subtasks')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating subtask:', error)
+        return null
+      }
+      return data
+    },
+
+    async delete(id: string): Promise<boolean> {
+      const { error } = await supabase
+        .from('subtasks')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.error('Error deleting subtask:', error)
+        return false
+      }
+      return true
+    },
+
+    async reorder(subtaskId: string, newPosition: number): Promise<boolean> {
+      const { error } = await supabase
+        .from('subtasks')
+        .update({
+          order_position: newPosition,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subtaskId)
+
+      if (error) {
+        console.error('Error reordering subtask:', error)
+        return false
+      }
+      return true
+    },
+
+    async getProgress(assignmentId: string): Promise<{ completed: number; total: number; percentage: number }> {
+      const { data, error } = await supabase
+        .from('subtasks')
+        .select('completed')
+        .eq('assignment_id', assignmentId)
+
+      if (error) {
+        console.error('Error getting subtask progress:', error)
+        return { completed: 0, total: 0, percentage: 0 }
+      }
+
+      const total = data.length
+      const completed = data.filter(s => s.completed).length
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+
+      return { completed, total, percentage }
     }
   }
 }

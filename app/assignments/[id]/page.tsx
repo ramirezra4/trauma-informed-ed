@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getAssignment, updateAssignment, deleteAssignment } from '@/lib/supabase'
 import PageHeader from '@/components/PageHeader'
+import SubtaskList from '@/components/SubtaskList'
 import { Assignment } from '@/types/supabase'
 
 const impactEmojis = {
@@ -437,6 +438,15 @@ export default function AssignmentDetailPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Subtasks */}
+        <div className="mb-6">
+          <SubtaskList
+            assignmentId={assignment.id}
+            assignmentTitle={assignment.title}
+            isEditable={!isEditing}
+          />
         </div>
 
         {/* Actions */}

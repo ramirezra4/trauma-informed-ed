@@ -140,6 +140,44 @@ export interface Database {
           created_at?: string
         }
       }
+      subtasks: {
+        Row: {
+          id: string
+          assignment_id: string
+          title: string
+          description: string | null
+          completed: boolean
+          order_position: number
+          est_minutes: number | null
+          due_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          assignment_id: string
+          title: string
+          description?: string | null
+          completed?: boolean
+          order_position?: number
+          est_minutes?: number | null
+          due_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          assignment_id?: string
+          title?: string
+          description?: string | null
+          completed?: boolean
+          order_position?: number
+          est_minutes?: number | null
+          due_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -163,6 +201,7 @@ export type User = Tables<'users'>
 export type Checkin = Tables<'checkins'>
 export type Assignment = Tables<'assignments'>
 export type LittleWin = Tables<'little_wins'>
+export type Subtask = Tables<'subtasks'>
 
 // UserProfile type for profile update operations
 export interface UserProfile {
@@ -179,4 +218,8 @@ export function isAssignment(obj: any): obj is Assignment {
 
 export function isUser(obj: any): obj is User {
   return obj && typeof obj.id === 'string' && 'email' in obj
+}
+
+export function isSubtask(obj: any): obj is Subtask {
+  return obj && typeof obj.id === 'string' && 'assignment_id' in obj && 'completed' in obj
 }
