@@ -1,6 +1,6 @@
 # Development Guide
 
-This document provides context, learning resources, and development practices for the Gentle Path trauma-informed student support platform.
+This document provides context, learning resources, and development practices for the Base trauma-informed student support platform.
 
 ## 🎉 Current Status: Milestone 2 - Assignment Tracking Complete
 

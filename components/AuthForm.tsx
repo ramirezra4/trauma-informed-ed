@@ -51,7 +51,7 @@ export default function AuthForm({ mode, onToggleMode }: AuthFormProps) {
     <div className="max-w-sm mx-auto bg-white rounded-lg shadow-md p-6">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-display text-primary-600 mb-2">
-          {mode === 'signin' ? 'Welcome Back' : 'Join Gentle Path'}
+          {mode === 'signin' ? 'Welcome Back' : 'Join Base'}
         </h2>
         <p className="text-sm text-neutral-600">
           {mode === 'signin' 

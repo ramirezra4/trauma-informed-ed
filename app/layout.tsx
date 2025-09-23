@@ -3,7 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
-  title: "Gentle Path",
+  title: "Base",
   description: "A trauma-informed student support tool that builds momentum with tiny wins and compassionate guidance.",
 };
 
